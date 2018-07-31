@@ -1,4 +1,0 @@
--10
--10
-pastes/sum.txt
-1 0
