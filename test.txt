@@ -1,0 +1,82 @@
+: 'for (( i=0; i<=$((${#txt}-1)); i++)); do
+  char=${txt:$i:1};
+  dchar=${txt:$i:2};
+  if [[ ${lineend[$linenum]+1} ]]; then
+    lineend[$linenum]=0;
+  fi;
+  if [[ ${lineend[$linenum]} -eq $((16*20)) ]]; then
+    linenum=$((linenum+1));
+  fi;
+  if [[ lineend[$linenum] -eq -1 ]]; then
+    if [[ "$char" == $'\n' ]]; then
+      curline=0;
+      linenum=$(($linenum+1));
+      lineend[$linenum]=-1;
+  	else if [[ "$dchar" == '\&' || "$dchar" == '\\' ]]; then
+  		curline=$(($curline+1));
+      i=$(($i+1));
+      lineend[$linenum]=$((${lineend[$linenum]}+2));
+  	else
+  		curline=$(($curline+1));
+      lineend[$linenum]=$((${lineend[$linenum]}+1));
+  	fi; fi;
+  else
+    i=$(($i-1));
+    linenum=$((linenum+1));
+  fi;
+  if [[ ]]
+
+done;'
+
+: "echo 'here' > split.txt;
+while : ; do
+  char=${txt:$i:1};
+  dchar=${txt:$i:2};
+  mode='norm'; #'norm' is normal mode where characters are added to text file; 'igno' is ignore mode, where characters aren't added until next linebreak
+  fin=0;
+  i=$(($i+16*20*$x));
+  while [[ i -lt ${#txt} ]]; do
+    if [[ mode == 'norm' ]]; then
+      if [[ "$char" == $'\n' ]]; then
+        curline=0; i=$(($i+16*20*$x))
+        linenum=$(($linenum+1));
+        echo linedata >> split.txt;
+        linedata='';
+    	else if [[ "$dchar" == '\&' || "$dchar" == '\\' ]]; then
+    		curline=$(($curline+1));
+        i=$(($i+1));
+        linedata+=$dchar;
+    	else
+    		curline=$(($curline+1));
+        linedata+=$char;
+    	fi; fi;
+    fi;
+    if [[ mode == 'igno' ]]; then
+      if [[ "$char" == $'\n' ]]; then
+        curline=0;
+        linenum=$(($linenum+1));
+      fi;
+    fi;
+    i=$(($i+1));
+    if [[ $(( $i%1000 )) -eq 0 ]]; then
+      echo $i >> log.txt;
+    fi;
+    if [[ curline -eq $((16*20)) ]]; then
+      fin=1;
+      echo linedata >> split.txt;
+      linedata='';
+      mode='igno';
+    fi;
+    if [[ linenum -eq $((8*20)) ]]; then
+      linenum=0;
+      ./prpaste.sh $(($minx+$x*20)) $(($miny+$y*20)) split.txt;
+      y=$(($y+1));
+    fi;
+  done
+  if [[ fin ]]; then
+    x=$(($x+1));
+    y=0;
+  else
+    break;
+  fi;
+done "
