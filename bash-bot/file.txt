@@ -1,1 +1,1 @@
-./min.txt
+pastes/sum.txt

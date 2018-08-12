@@ -12,7 +12,7 @@ while [[ 1 ]]; do date +%s; err=1;
     cmds=$(cat in.txt);
     for word in $cmds; do #pushes write commands to server
       echo $word;
-      sleep 1;
+      sleep 0.75;
     done;
   done;
   } | wscat -c "ws://www.yourworldoftext.com$4/ws/" > ret.txt;

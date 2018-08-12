@@ -1,0 +1,1 @@
+{"fetchRectangles":[{"minY":0,"minX":0,"maxY":499,"maxX":1}],"kind":"fetch","v":"3"}
