@@ -117,11 +117,11 @@ function fetch2space(fetch,dimension){
        console.log('converting at coordinate', x, y);
        var content = fetch[[x,y]];
        for (i=0; i<8; i++){
-         rows[i] = rows[i].push.apply(rows[i], content.slice(i*16,i*16+16).split(''));
+         rows[i].push.apply(rows[i], content.slice(i*16,i*16+16).split(''));
        }
        x++;
      }
-     space = space.push.apply(space, rows);
+     space.push.apply(space, rows);
      y++;
    }
    return space;
