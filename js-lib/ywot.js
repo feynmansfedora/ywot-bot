@@ -27,7 +27,9 @@ class YWOT extends EventEmitter{ /*Manages connection frequency with the server*
     }
     setInterval(()=>{
       if (pushqueue.length > 0){
+        console.log(pushqueue);
         pushqueue.shift().servpush();
+        console.log(pushqueue.length);
       }
       else{
         this.emit('free');
@@ -51,6 +53,20 @@ class World extends EventEmitter{
     }
     this.setsock = function(sockin){
       sock = sockin;
+      ws.onclose = function(e) {
+        console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+        setTimeout(function() {
+          asock = new ws(`ws://www.yourworldoftext.com/ws/`);
+          asock.on('open', () => {
+            this.setsock(asock)
+          })
+        }, 10000);
+      };
+
+      ws.onerror = function(err) {
+        console.error('Socket encountered error: ', err.message, 'Closing socket');
+        ws.close();
+      };
       sock.on('message', (message) => {
         message = JSON.parse(message);
         console.log('message');
@@ -74,6 +90,15 @@ class World extends EventEmitter{
           console.log('made callback');
           callback(fetch2space(message,dimension));
         }
+        if (message.kind === 'channel'){ //Change to switch-case
+          this.emit('channel', message.sender);
+        }
+        if (message.kind === 'cursor'){
+          this.emit('cursor', message.positions, message.sender);
+        }
+        if (message.kind === 'tileUpdate'){
+          this.emit('tileUpdate', message.sender, message.source, message.tiles)
+        }
       });
       this.emit('on');
     }
@@ -81,12 +106,24 @@ class World extends EventEmitter{
       sock.send(pushqueue.shift());
       console.log('servout', callbacks);
     }
-    this.write = function(chars){
+    function unsafewrite(chars,lrg){
       for (var i=0; i<chars.length; i++){
         chars[i].splice(4,0,0);
         chars[i].push(i);
       }
-      newqueue(`{"edits":${JSON.stringify(chars)},"kind":"write"}`, this);
+      newqueue(`{"edits":${JSON.stringify(chars)},"kind":"write"}`, lrg);
+    }
+    this.write = function(chars){ //tileY, tileX, charY, charX, char
+      console.log(chars);
+      var batch = [];
+      for (var i=0; i<chars.length; i++){
+        if (batch.length == 200){
+          unsafewrite(batch,this);
+          batch = [];
+        }
+        batch.push(chars[i])
+      }
+      unsafewrite(batch,this);
     }
     this.fetch = function(coords, call){
       console.log('fetch request added');
