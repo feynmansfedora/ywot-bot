@@ -57,7 +57,7 @@ function tileUpdate(world){
       var tilewrite = {}; for (i=0; i<coords.length; i++){
         tilewrite[coords[i]] = pretilewrite[i];
       }
-      pretilewrite1 = coords(tilewrite).map((tile) => {
+      pretilewrite1 = Object.keys(tilewrite).map((tile) => {
         newtile = []
         for (x=0; x<16; x++){
           for (y=0; y<8; y++){
