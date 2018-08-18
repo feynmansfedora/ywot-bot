@@ -41,10 +41,10 @@ function tileUpdate(world){
     coords = Object.keys(tiles);
     console.log('received ', coords.length, ' tiles\' updates.');
     if (sender != world.thissource){
-      coordinates.add.apply(coordinates, coords(tiles));
-      conquer += coords(tiles).length;
+      coordinates.add.apply(coordinates, coords);
+      conquer += coords.length;
       console.log('overwritten ', conquer, ' tiles; overwritten ', coordinates.size, ' unique tiles.');
-      var pretilewrite = coords(tiles).map((tile)=>{
+      var pretilewrite = coords.map((tile)=>{
         return ywot.combine((char1,char2)=>{
           if (char1 == char2){
             return '';
@@ -54,8 +54,8 @@ function tileUpdate(world){
           }
         },ywot.tile2space(tiles[tile].content),0,0,emptytile,0,0);
       });
-      var tilewrite = {}; for (i=0; i<coords(tiles).length; i++){
-        tilewrite[coords(tiles)[i]] = pretilewrite[i];
+      var tilewrite = {}; for (i=0; i<coords.length; i++){
+        tilewrite[coords[i]] = pretilewrite[i];
       }
       pretilewrite1 = coords(tilewrite).map((tile) => {
         newtile = []
@@ -66,10 +66,10 @@ function tileUpdate(world){
         }
         return newtile;
       });
-      tilewrite = {}; for (i=0; i<coords(tiles).length; i++){
-        tilewrite[coords(tiles)[i]] = pretilewrite1[i];
+      tilewrite = {}; for (i=0; i<coords.length; i++){
+        tilewrite[coords[i]] = pretilewrite1[i];
       }
-      a = [].concat.apply([],coords(tiles).map((tile)=>{
+      a = [].concat.apply([],coords.map((tile)=>{
         return tilewrite[tile].map((char) => {
           char.unshift(parseInt(tile.split(',')[1]));
           char.unshift(parseInt(tile.split(',')[0]));
