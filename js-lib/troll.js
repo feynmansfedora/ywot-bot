@@ -6,17 +6,22 @@ var worlds = [];
 var worldnames = ['','~Seschient'];
 worlds.push.apply(worlds,worldnames.map((name)=>{return {'world':client.openworld(name),'thissource':'','sourcenotcalled':true,'name':name};}));
 
-//var emptytile = [[' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],[' ','r','e','k','t',' ','~','h','d','a','w','g','7','7','7',' ']];
 var emptytile = `  this page now |
   closed to all |
   future inputs |
                 |
                 |
                 |
- rekt ~hdawg777 |
+ rekt ~meli     |
                 |`.split('\n').map((row)=>{return row.split('').slice(0,16);});
-var conquer = 0;
-var coordinates = new Set();
+/*var emptytile = `                |
+                |
+                |
+                |
+                |
+                |
+                |
+                |`.split('\n').map((row)=>{return row.split('').slice(0,16);});*/
 
 function channel(world){
   return (source)=>{
@@ -36,11 +41,13 @@ function onopen(world){
 }
 worlds.forEach((world)=>{world.world.on('on', onopen(world.world));});
 
+var coordinates = new Set();
+conquer = 0;
 function tileUpdate(world){
   return (sender, source, tiles)=>{
-    coords = Object.keys(tiles);
-    console.log('received ', coords.length, ' tiles\' updates.');
-    if (sender != world.thissource){
+    coords = Object.keys(tiles).filter((tile)=>{coordarray=tile.split(',').map((x)=>{return parseInt(x);}); return Math.abs(coordarray[0])<1000 && Math.abs(coordarray[1])<1000;});
+    console.log('received ', coords.length, ' tiles\' updates (', coords, ';', Object.keys(tiles), '); writes remaining: ', world.getwritequeue().size);
+    if (sender != world.thissource && coords.length > 0 && coords.length < 99){
       coordinates.add.apply(coordinates, coords);
       conquer += coords.length;
       console.log('overwritten ', conquer, ' tiles; overwritten ', coordinates.size, ' unique tiles.');
