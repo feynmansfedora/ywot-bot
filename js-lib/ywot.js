@@ -38,7 +38,7 @@ class YWOT extends EventEmitter{ /*Manages connection frequency with the server*
       else{
         this.emit('free'); //Background processes like filling in an area
       }
-    }, 751)
+    }, 750)
   }
 }
 
@@ -271,7 +271,7 @@ function Space(){
       }
     }
      //reads file w/ error handling; splits by line and maps row into individual characters (good spacing)
-    this.data = fs.readFileSync(filename, 'utf8').split('\n').map((row)=>{return splitesc(row);});
+    this.data = fs.readFileSync(filename, 'utf8').split('\n').slice(0,-1).map((row)=>{return splitesc(row);});
   }
   this.comb = function(otherspace, charcomb, x1=0, y1=0, x2=0, y2=0){ //Adds another Space to it, and returns the sum.
     var lcol = Math.min(x1,x2); var ucol = Math.max(Math.max.apply(null,this.data.map((row)=>{return row.length;}))+x1,Math.max.apply(null,otherspace.data.map((row)=>{return row.length;}))+x2);
@@ -280,16 +280,18 @@ function Space(){
       var newrow = []
       for (var col=lcol; col<ucol; col++){
         try{
-          var char1 = space1[row][col];
+          var char1 = this.data[row][col];
         }
         catch(err){
           var char1 = '';
+          console.log('oops1');
         }
         try{
-          var char2 = space2[row][col];
+          var char2 = otherspace.data[row][col];
         }
         catch(err){
           var char2 = '';
+          console.log('oops2', err);
         }
         newrow.push(charcomb(char1,char2));
       }
@@ -302,7 +304,8 @@ function Space(){
   this.writefile = function(filename){ //Writes internal data to a file
     fs.writeFile(filename,this.data.map((row)=>{return row.join('');}).join('\n'),(err)=>{console.log(err);});
   }
-  this.gettile = function(x,y){ //Returns the tile at the position (positive only, y+ down, x+ right), treating topleft as 0,0
+  this.gettile = function(y,x){ //Returns the tile at the position (positive only, y+ down, x+ right), treating topleft as 0,0
+    //TODO: improve ampersand-handling. They are treated as if they don't exist. XO
     tilespace = new Space()
     tilespace.fromtile(this.data.slice(8*y,8*y+8).map((row)=>{return row.slice(16*x,16*x+16).join('');}).join(''));
     return tilespace;

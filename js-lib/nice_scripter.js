@@ -14,21 +14,57 @@ main.on('on',()=>{
 });
 var thissender;
 main.on('channel',(sender)=>{thissender = sender;});
+
+var curcmds = []; //Current blocks to run commands in
+var old = {}; //Old data which back be replaced by the command "back"
+var cmdkeys = {"back":(tiley,tilex)=>{
+  let tilereplace = new ywot.Space();
+  tilereplace.fromtile(old[[tiley,tilex]].replace('Ω',' '));
+  main.write(tilereplace.towrite(tiley,tilex));
+}};
 main.on('tileUpdate',(sender,source,tiles)=>{
-  if (sender == thissender){
+  tilekeys = Object.keys(tiles).map((coord)=>{return coord.split(',').map((num)=>{return parseInt(num);});});
+  console.log('tileUpdate');
+  if (sender == thissender){ //Prevents infinite recursion on its own edits
     return 0;
   }
-  let valid = Object.keys(tiles).map((tile)=>{return tile.split(',').map((num)=>{return parseInt(num);});}).filter((tile)=>{return (tile[0] >= -2 && tile[0] <= 1 && tile[1] >= -2 && tile[1] <= 1);});
+  let valid = tilekeys.filter((tile)=>{return (tile[0] >= -2 && tile[0] <= 1 && tile[1] >= -2 && tile[1] <= 1);});
   for (i=0; i<valid.length; i++){
     curtile = new ywot.Space();
     curtile.fromtile(tiles[valid[i]].content);
     tilespace = alert.gettile(valid[i][0]+2,valid[i][1]+2).sub(curtile);
+    console.log(alert.gettile(valid[i][0]+2,valid[i][1]+2))
+    console.log(curtile.data);
+    console.log(tilespace.data)
     main.write(tilespace.towrite(valid[i][0],valid[i][1]));
   };
-  if (!(valid == [])){
-    let omegapos = Object.keys(tiles).filter((tile)=>{return tiles[tile].content.includes('Ω');}).map((coord)=>{return coord.split(',').map((num)=>{return parseInt(num);});});
+  let omegapos = tilekeys.filter((tile)=>{return tiles[tile].content.includes('Ω');});
+  if (valid.length == 0){
     for (i=0; i<omegapos.length; i++){
-      main.write(cmdbox.towrite(omegapos[i][0],omegapos[i][1]));
+      curtile = new ywot.Space();
+      curtile.fromtile(tiles[omegapos[i]].content);
+      old[omegapos[i]] = tiles[omegapos[i]].content;
+      curcmds.push(omegapos[i]);
+      //console.log(cmdbox);
+      //console.log(curtile);
+      //console.log(cmdbox.sub(curtile));
+      main.write(cmdbox.sub(curtile).towrite(parseInt(omegapos[i][0]),parseInt(omegapos[i][1])));
+    }
+  }
+  if (omegapos.length == 0){
+    console.log('here');
+    //!!!
+    //!!!
+    //Big error here: for some reason, array objects with the same internals aren't treated as equivalent
+    docmds = tilekeys.filter(tile => curcmds.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile))); //List of edited tiles which have been recently omega'd
+    for (i=0; i<docmds.length; i++){
+      cmd = docmds[i]; //A given edited tile which has been omega'd
+      console.log(cmd);
+      for (j=0; j<Object.keys(cmdkeys).length; j++){ //Iterates through callback functions and each command caller name
+        if (tiles[cmd].content.includes(Object.keys(cmdkeys)[j])){ //If the given edited tile has the cmd caller name
+          Object.values(cmdkeys)[j](cmd[0],cmd[1]); //Calls callback; gives coordinates
+        }
+      }
     }
   }
 });
