@@ -307,7 +307,7 @@ function Space(){
   this.gettile = function(y,x){ //Returns the tile at the position (positive only, y+ down, x+ right), treating topleft as 0,0
     //TODO: improve ampersand-handling. They are treated as if they don't exist. XO
     tilespace = new Space()
-    tilespace.fromtile(this.data.slice(8*y,8*y+8).map((row)=>{return row.slice(16*x,16*x+16).join('');}).join(''));
+    tilespace.data = this.data.slice(8*y,8*y+8).map((row)=>{return row.slice(16*x,16*x+16);});
     return tilespace;
   }
   this.towrite = function(tiley,tilex){ //Outputs the "write" structure to be plugged into World.write().

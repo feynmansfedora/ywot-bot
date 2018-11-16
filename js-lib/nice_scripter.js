@@ -17,10 +17,20 @@ main.on('channel',(sender)=>{thissender = sender;});
 
 var curcmds = []; //Current blocks to run commands in
 var old = {}; //Old data which back be replaced by the command "back"
-var cmdkeys = {"back":(tiley,tilex)=>{
+var cmdkeys = {"back":(tiley,tilex,tile)=>{
   let tilereplace = new ywot.Space();
+  let curtile = new ywot.Space();
+  curtile.fromtile(tile);
   tilereplace.fromtile(old[[tiley,tilex]].replace('Ω',' '));
-  main.write(tilereplace.towrite(tiley,tilex));
+  main.write(tilereplace.sub(curtile).towrite(tiley,tilex));
+},"bsck":(tiley,tilex,tile)=>{
+  let tilereplace = new ywot.Space();
+  let curtile = new ywot.Space();
+  curtile.fromtile(tile);
+  tilereplace.fromtile(old[[tiley,tilex]]);
+  main.write(tilereplace.sub(curtile).towrite(tiley,tilex));
+},"list":(tiley,tilex,tile)=>{
+  //Make sure valid area is protected; create a stable framework to allow callbacks like this
 }};
 main.on('tileUpdate',(sender,source,tiles)=>{
   tilekeys = Object.keys(tiles).map((coord)=>{return coord.split(',').map((num)=>{return parseInt(num);});});
@@ -33,9 +43,6 @@ main.on('tileUpdate',(sender,source,tiles)=>{
     curtile = new ywot.Space();
     curtile.fromtile(tiles[valid[i]].content);
     tilespace = alert.gettile(valid[i][0]+2,valid[i][1]+2).sub(curtile);
-    console.log(alert.gettile(valid[i][0]+2,valid[i][1]+2))
-    console.log(curtile.data);
-    console.log(tilespace.data)
     main.write(tilespace.towrite(valid[i][0],valid[i][1]));
   };
   let omegapos = tilekeys.filter((tile)=>{return tiles[tile].content.includes('Ω');});
@@ -62,7 +69,7 @@ main.on('tileUpdate',(sender,source,tiles)=>{
       console.log(cmd);
       for (j=0; j<Object.keys(cmdkeys).length; j++){ //Iterates through callback functions and each command caller name
         if (tiles[cmd].content.includes(Object.keys(cmdkeys)[j])){ //If the given edited tile has the cmd caller name
-          Object.values(cmdkeys)[j](cmd[0],cmd[1]); //Calls callback; gives coordinates
+          Object.values(cmdkeys)[j](cmd[0],cmd[1],tiles[cmd].content); //Calls callback; gives coordinates
         }
       }
     }

@@ -6,5 +6,4 @@ var main = client.openworld();
 
 alert = new ywot.Space()
 alert.readfile('./alert.txt');
-console.log(alert.data);
-x = alert.gettile(2,0).data
+console.log(alert.gettile(2,0).data);
