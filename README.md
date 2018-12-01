@@ -1,7 +1,16 @@
 # ywot-bot
 This project is mostly an API to interface with [Your World of Text](https://www.yourworldoftext.com)'s servers. The rest of it is a series of bots to use the API and act as examples. To use it in your project, copy `js-lib/ywot.js` over to your project and make sure to have ws installed.
 #### Dependencies
-The only dependency is ws. This npm library can be installed globally with `sudo npm i -g ws` or locally with `npm i ws`.
+The only dependency is ws (and nodejs, obviously). This npm library can be installed globally with `sudo npm i -g ws` or locally with `npm i ws`.
+#### Installation
+For installation on virtually any Unix system:
+[Installing nodejs and npm](https://blog.teamtreehouse.com/install-node-js-npm-linux)
+
+Make sure you're in the right directory, then run the following commands:
+```
+git clone https://github.com/feynmansfedora/ywot-bot.git
+sudo npm i -g ws
+```
 # Documentation
 If you're looking for a quick introduction to how the API is structured, check out js-lib/helloworld.js that prints helloworld on [testworld](https://www.yourworldoftext.com/testworld). Otherwise, the full documentation is here.
 It's written in node.js, and consists of three classes, lying heavily on the built-in [Event Emitter](https://nodejs.org/api/events.html):
