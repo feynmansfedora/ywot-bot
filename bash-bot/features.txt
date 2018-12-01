@@ -1,5 +1,0 @@
-Features to add:
--Purposeful editing (e.g. not pushing spaces to an empty chunk)
-X-Flickers w/o multi-print (e.g. &->|->&->&->a->)
--Importance zones to prioritize in purposeful editing (e.g. signature chunk)
--Randomization/scriptability?

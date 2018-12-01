@@ -1,2 +1,0 @@
-{"kind": "channel", "sender": "daphne.response.ZcuvMvRxHS!KDmkaNxWWp"}
-> 

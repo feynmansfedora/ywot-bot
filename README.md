@@ -1,7 +1,5 @@
 # ywot-bot
 This project is mostly an API to interface with [Your World of Text](https://www.yourworldoftext.com)'s servers. The rest of it is a series of bots to use the API and act as examples. To use it in your project, copy `js-lib/ywot.js` over to your project and make sure to have ws installed.
-#### Why are there two branches?
-The original bash-bot was a poorly-written, unportable hodge-podge of code that I eventually overhauled into js-lib, the node.js API (only use that).
 #### Dependencies
 The only dependency is ws. This npm library can be installed globally with `sudo npm i -g ws` or locally with `npm i ws`.
 # Documentation
