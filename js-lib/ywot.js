@@ -284,14 +284,12 @@ function Space(){
         }
         catch(err){
           var char1 = '';
-          console.log('oops1');
         }
         try{
           var char2 = otherspace.data[row][col];
         }
         catch(err){
           var char2 = '';
-          console.log('oops2', err);
         }
         newrow.push(charcomb(char1,char2));
       }
