@@ -33,19 +33,19 @@ var cmdkeys = {"back":(tiley,tilex,tile)=>{
   //Make sure valid area is protected; create a stable framework to allow callbacks like this
 }};
 main.on('tileUpdate',(sender,source,tiles)=>{
-  tilekeys = Object.keys(tiles).map((coord)=>{return coord.split(',').map((num)=>{return parseInt(num);});});
+  tilekeys = Object.keys(tiles).map(coord => coord.split(',').map(num => parseInt(num)));
   console.log('tileUpdate');
   if (sender == thissender){ //Prevents infinite recursion on its own edits
     return 0;
   }
-  let valid = tilekeys.filter((tile)=>{return (tile[0] >= -2 && tile[0] <= 1 && tile[1] >= -2 && tile[1] <= 1);});
+  let valid = tilekeys.filter(tile => (tile[0] >= -2 && tile[0] <= 1 && tile[1] >= -2 && tile[1] <= 1));
   for (i=0; i<valid.length; i++){
     curtile = new ywot.Space();
     curtile.fromtile(tiles[valid[i]].content);
     tilespace = alert.gettile(valid[i][0]+2,valid[i][1]+2).sub(curtile);
     main.write(tilespace.towrite(valid[i][0],valid[i][1]));
   };
-  let omegapos = tilekeys.filter((tile)=>{return tiles[tile].content.includes('Ω');});
+  let omegapos = tilekeys.filter(tile => tiles[tile].content.includes('Ω'));
   if (valid.length == 0){
     for (i=0; i<omegapos.length; i++){
       curtile = new ywot.Space();
