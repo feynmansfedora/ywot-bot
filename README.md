@@ -151,11 +151,17 @@ Example code:
 ```javascript
 space.writefile('./licence.txt');
 ```
-- `gettile(y,x)` gets the tile of Space at y,x y increasing going downwards and x increasing going rightwards. It outputs this as a space, and takes in y and x as numbers.
+- `gettile(y,x)` gets the tile of Space at y,x y increasing going downwards and x increasing going rightwards. It outputs this as a space, and takes in y and x as numbers. Note: pads if outside of definition (not in negative direction)
 
 Example code:
 ```javascript
 console.log(space.gettile(1,2).data);
+```
+- `getrange(minY,minX,maxY,maxX)` gets a range of tiles. Acts exactly like gettile except with a range defined by coordinates between the topleft of coordinates (minY,minX) and (maxY,maxX). This also pads if outside of definition
+
+Example code:
+```javascript
+console.log(space.gettile(0,0,12,4).data);
 ```
 - `towrite(tiley,tilex)` returns a well-structured write array which can easily be fed to World.write(chars). tiley,tilex is the displacement of the Space object.
 

@@ -217,6 +217,20 @@ class World extends EventEmitter{
 
 function Space(){
   this.data = []
+  function padslice(array, min, max, padchar){ //This pads in extra characters outside of the range (only in the positive direction)
+    if (this.length > max){
+      let curslice = this.slice(min,this.length)
+      for (i=0; i<this.length-max; i++){
+        if (typeof padchar == typeof []){
+          curslice.push(padchar.slice(0));
+        } else {
+          curslice.push(padchar);
+        }
+      }
+      return curslice
+    }
+    return this.slice(min,max);
+  }
   this.fromfetch = function (fetch,dimension){ //Takes in a fetch (from the fetch callback), and edits internal data to match
     //Corrects to single dimension assuming requests always add up to a rectangle.
     minx = Math.min.apply(null, dimension.map(a => a.minX)); miny = Math.min.apply(null, dimension.map(a => a.minY));
@@ -304,12 +318,12 @@ function Space(){
   }
   this.gettile = function(y,x){ //Returns the tile at the position (positive only, y+ down, x+ right), treating topleft as 0,0
     tilespace = new Space();
-    tilespace.data = this.data.slice(8*y,8*y+8).map(row => row.slice(16*x,16*x+16));
+    tilespace.data = padslice(this.data,8*y,8*y+8,['&','&','&','&','&','&','&','&']).map(row => padslice(row,16*x,16*x+16,'&'));
     return tilespace;
   }
   this.getrange = function(minY,minX,maxY,maxX){ //Similar to gettile, except with a range of tiles (returns '' for areas where there isn't one)
     tilespace = new Space();
-    tilespace.data = this.data.slice(8*minY,8*maxY).map(row => row.slice(16*minX,16*maxX));
+    tilespace.data = padslice(this.data,8*minY,8*maxY,new Array(16*maxX-16*minX).fill('&')).map(row => padslice(row,16*minX,16*maxX,'&'));
     return tilespace;
   }
   this.towrite = function(tiley,tilex){ //Outputs the "write" structure to be plugged into World.write().
@@ -331,6 +345,15 @@ function Space(){
         return ''
       } else{
         return char1
+      }
+    }, x1, y1, x2, y2)
+  }
+  this.add = function(otherspace, x1=0, y1=0, x2=0, y2=0){
+    return this.comb(otherspace,(char1,char2)=>{
+      if (char2 == ''){
+        return char1;
+      } else{
+        return char2;
       }
     }, x1, y1, x2, y2)
   }
