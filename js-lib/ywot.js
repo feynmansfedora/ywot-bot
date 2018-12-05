@@ -58,6 +58,8 @@ class World extends EventEmitter{
     var writequeue = new Set(); //Packs writes to maximum accepted by server optimally
     var sockclosed = false; //If the sock is closed, pushes requests back to YWOT
     var self = this; //Good context for a .on command (ensures a callback to this obj)
+    var cached = []; //A record of
+    var cachespace = new Space();
     function newqueue(data,lrg){ //Internal call to queue up in YWOT and add it to queue
       client.newpush(lrg);
       pushqueue.push(data);
@@ -83,10 +85,20 @@ class World extends EventEmitter{
         };
       }, 1000); //Reconstructs websocket in 1 second
     }
+    function getcached(minX,minY,maxX,maxY){
+      if (iscached(minX,minY,maxX,maxY)){
+        return cachespace.getrange(minX,minY,maxX,maxY);
+      } else {
+        return false;
+      }
+    }
+    function iscached(minX,minY,maxX,maxY){
+
+    }
     this.getwritequeue = function(){ //External getter to make writequeue private
       return writequeue;
     }
-    this.setsock = function(sockin){ //Sets up error handling (and onclose retry), and message-handling --
+    this.setsock = function(sockin){ //Sets up error handling (and onclose retry), and message-handling
       sock = sockin;
       sock.onclose = retry;
       sock.onerror = function(err) {
