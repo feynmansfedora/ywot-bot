@@ -32,8 +32,7 @@ var cmdkeys = {"back":(tiley,tilex,tile)=>{
 },"list":(tiley,tilex,tile)=>{
   //Make sure valid area is protected; create a stable framework to allow callbacks like this
 }};
-main.on('tileUpdate',(sender,source,tiles)=>{
-  tilekeys = Object.keys(tiles).map(coord => coord.split(',').map(num => parseInt(num)));
+main.on('tileUpdate',(sender,source,tiles, tilekeys)=>{
   console.log('tileUpdate');
   if (sender == thissender){ //Prevents infinite recursion on its own edits
     return 0;

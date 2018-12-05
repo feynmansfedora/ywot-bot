@@ -125,7 +125,7 @@ class World extends EventEmitter{
           this.emit('cursor', message.positions, message.sender);
         }
         if (message.kind === 'tileUpdate'){
-          this.emit('tileUpdate', message.sender, message.source, message.tiles);
+          this.emit('tileUpdate', message.sender, message.source, message.tiles, Object.keys(message.tiles).map(coord => coord.split(',').map(num => parseInt(num))));
         }
       }); //!!!
       this.emit('on'); //tells program that World object is now active
