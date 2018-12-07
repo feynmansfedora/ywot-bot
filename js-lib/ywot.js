@@ -230,9 +230,9 @@ class World extends EventEmitter{
 function Space(){
   this.data = []
   function padslice(array, min, max, padchar){ //This pads in extra characters outside of the range (only in the positive direction)
-    if (this.length > max){
-      let curslice = this.slice(min,this.length)
-      for (i=0; i<this.length-max; i++){
+    if (this.data.length > max){
+      let curslice = this.data.slice(min,this.data.length)
+      for (i=0; i<this.data.length-max; i++){
         if (typeof padchar == typeof []){
           curslice.push(padchar.slice(0));
         } else {
@@ -241,7 +241,7 @@ function Space(){
       }
       return curslice
     }
-    return this.slice(min,max);
+    return this.data.slice(min,max);
   }
   this.fromfetch = function (fetch,dimension){ //Takes in a fetch (from the fetch callback), and edits internal data to match
     //Corrects to single dimension assuming requests always add up to a rectangle.
