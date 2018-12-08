@@ -86,7 +86,7 @@ class World extends EventEmitter{
         };
       }, 1000); //Reconstructs websocket in 1 second
     }
-    function getcached(minX,minY,maxX,maxY){ //Either gets the cached data over the given area or returns false
+    function getcached(minY,minX,maxY,maxX){ //Either gets the cached data over the given area or returns false
       if (iscached(minX,minY,maxX,maxY)){
         return cachespace.getrange(minX,minY,maxX,maxY);
       } else {
@@ -250,6 +250,8 @@ class World extends EventEmitter{
       }
     }
     this.fetch = function(coords, call){ //Makes a fetch request to server, calls callback when response is received
+      cache = getcached(coords[0],coords[1],coords[2],coords[3]);
+      if (cache) call(cache);
       console.log('fetch request added');
       function split(rectangle){ //A recursive function to split a rectangle into rectangles smaller than 1000
         let rects = [rectangle]
