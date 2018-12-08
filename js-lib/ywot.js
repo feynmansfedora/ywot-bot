@@ -58,8 +58,9 @@ class World extends EventEmitter{
     var writequeue = new Set(); //Packs writes to maximum accepted by server optimally
     var sockclosed = false; //If the sock is closed, pushes requests back to YWOT
     var self = this; //Good context for a .on command (ensures a callback to this obj)
-    var cached = []; //A record of
-    var cachespace = new Space();
+    var cached = []; //The set of rectangles representing all positions which have been modified
+    var cachespace = new Space(); //The current internal cache of the world's state
+    var modified = false; //A record of if rectangles have been modified
     function newqueue(data,lrg){ //Internal call to queue up in YWOT and add it to queue
       client.newpush(lrg);
       pushqueue.push(data);
@@ -85,15 +86,69 @@ class World extends EventEmitter{
         };
       }, 1000); //Reconstructs websocket in 1 second
     }
-    function getcached(minX,minY,maxX,maxY){
+    function getcached(minX,minY,maxX,maxY){ //Either gets the cached data over the given area or returns false
       if (iscached(minX,minY,maxX,maxY)){
         return cachespace.getrange(minX,minY,maxX,maxY);
       } else {
         return false;
       }
     }
-    function iscached(minX,minY,maxX,maxY){
-
+    function contains(rectangle,point){ //Does the rectangle contain the given point?
+      return (rectangle[0] <= point[0] && point[0] <= rectangle[2]) && (rectangle[1] <= point[1] && point[1] <= rectangle[3]);
+    }
+    function intersects(rectangle1,rectangle2){ //Do the rectangles intersect?
+      //If minX1 < maxX2 && minX2 < maxX1, the two intervals x1 and x2 intersect.
+      return (rectangle1[0] <= rectangle2[2] && rectangle2[0] <= rectangle1[2]) && (rectangle1[1] <= rectangle2[3] && rectangle2[1] <= rectangle1[3]);
+    }
+    function cornercheck(rectangle1,rectangle2){ //Does rectangle2 contain a point off one of the corners of rectangle1
+      oncorner = false;
+      if (contains(rectangle2,[rectangle1[0],rectangle1[1]+1])) oncorner = true;
+      if (contains(rectangle2,[rectangle1[0]+1,rectangle1[1]])) oncorner = true;
+      if (contains(rectangle2,[rectangle1[0],rectangle1[3]+1])) oncorner = true;
+      if (contains(rectangle2,[rectangle1[0]+1,rectangle1[3]])) oncorner = true;
+      if (contains(rectangle2,[rectangle1[2],rectangle1[1]+1])) oncorner = true;
+      if (contains(rectangle2,[rectangle1[2]+1,rectangle1[1]])) oncorner = true;
+      if (contains(rectangle2,[rectangle1[2],rectangle1[3]+1])) oncorner = true;
+      if (contains(rectangle2,[rectangle1[2]+1,rectangle1[3]])) oncorner = true;
+      return oncorner
+    }
+    function iscached(minX,minY,maxX,maxY){ //Is the region cached?
+      let check = [minY,minX,maxY,maxX];
+      let edgecheck = [];
+      for (i=0; i<=cached.length; i++){
+        let rectangle = cached[i];
+        if (!intersects(rectangle,check)){
+          continue;
+        }
+        rectangle[0] = Math.min(rectangle[0],check[0]);
+        rectangle[1] = Math.min(rectangle[1],check[1]);
+        rectangle[2] = Math.min(rectangle[2],check[2]);
+        rectangle[3] = Math.min(rectangle[3],check[3]);
+        edgecheck.push(rectangle);
+      }
+      let coverrect = [];
+      while (edgecheck.length > 1){
+        rectangle = edgecheck[0];
+        let corners = 8;
+        if (rectangle[0] == check[0]) corners -= 2;
+        if (rectangle[1] == check[1]) corners -= 2;
+        if (rectangle[2] == check[2]) corners -= 2;
+        if (rectangle[3] == check[3]) corners -= 2;
+        for (i=1; i<=edgecheck.length; i++){
+          if (cornercheck(rectangle,edgecheck[i])){
+            corners -= 1
+          }
+          if (corners == 0){
+            break;
+          }
+        }
+        if (corners > 0){
+          return false;
+        } else {
+          edgecheck.shift();
+        }
+      }
+      return true;
     }
     this.getwritequeue = function(){ //External getter to make writequeue private
       return writequeue;
