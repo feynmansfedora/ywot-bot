@@ -192,9 +192,10 @@ class World extends EventEmitter{
           this.emit('cursor', message.positions, message.sender);
         }
         if (message.kind === 'tileUpdate'){
-          this.emit('tileUpdate', message.sender, message.source, message.tiles);
+          let tilekeys = Object.keys(message.tiles).map(coord => coord.split(',').map(num => parseInt(num)));
+          this.emit('tileUpdate', message.sender, message.source, message.tiles, tilekeys);
         }
-      }); //!!!
+      });
       this.emit('on'); //tells program that World object is now active
     }
     this.servpush = function(){ //Never use outside of YWOT class; gives scheduled data to server
@@ -228,19 +229,6 @@ class World extends EventEmitter{
       return `{"edits":${JSON.stringify(chars)},"kind":"write"}`; //Externals
     }
     this.write = function(chars){ //tileY, tileX, charY, charX, char
-      //
-      //
-      //
-      /*var batch = []; //Merges command into batches
-      for (var i=0; i<chars.length; i++){
-        if (batch.length == 200){
-          writequeue.push.apply(writequeue,batch);
-          newqueue('USE WRITEQUEUE', this);
-          batch = [];
-        }
-        batch.push(chars[i]);
-      }
-      writequeue.push.apply(writequeue,batch);*/
       let oldlength = writequeue.size
       for (var i=0; i<chars.length; i++){
         writequeue.add(chars[i]);
@@ -326,7 +314,7 @@ function Space(){
     this.data = space;
   }
   this.fromtile = function(tile){ //Takes in a tile (string 16x8) and converts to internal data
-    rows = [[],[],[],[],[],[],[],[]];
+    let rows = [[],[],[],[],[],[],[],[]];
     for (x=0; x<16; x++){
       for (y=0; y<8; y++){
         rows[y].push(tile.split('')[y*16+x])
@@ -356,24 +344,26 @@ function Space(){
      //reads file w/ error handling; splits by line and maps row into individual characters (good spacing)
     this.data = fs.readFileSync(filename, 'utf8').split('\n').slice(0,-1).map((row)=>{return splitesc(row);});
   }
-  this.comb = function(otherspace, charcomb, x1=0, y1=0, x2=0, y2=0){ //Adds another Space to it, and returns the sum.
-    var lcol = Math.min(x1,x2); var ucol = Math.max(Math.max.apply(null,this.data.map((row)=>{return row.length;}))+x1,Math.max.apply(null,otherspace.data.map((row)=>{return row.length;}))+x2);
+  this.comb = function(otherspace, charcomb, y1=0, x1=0, y2=0, x2=0){
+    //location handling is completely and utterly broken (i.e. it doesnt exist)
+    var lcol = Math.min(x1,x2)*16; var ucol = Math.max(Math.max.apply(null,this.data.map((row)=>{return row.length;}))+x1,Math.max.apply(null,otherspace.data.map((row)=>{return row.length;}))+x2);
+    var lrow = Math.min(y1,y2)*8; var urow = Math.max(this.data.length+y1, otherspace.data.length+y2);
+    console.log(lcol,lrow,ucol,urow);
     var newspace = [];
-    for (var row=Math.min(y1,y2); row<Math.max(this.data.length+y1, otherspace.data.length+y2); row++){
+    for (var row=lrow; row<urow; row++){
       var newrow = []
       for (var col=lcol; col<ucol; col++){
-        try{
-          var char1 = this.data[row][col];
-        }
-        catch(err){
+        if (row < y1*8 || row >= this.data.length + y1*8 || col < x1*16 || col >= this.data[row - y1*8].length + x1*16){
           var char1 = '';
+        } else {
+          var char1 = this.data[row - y1*8][col - x1*16];
         }
-        try{
-          var char2 = otherspace.data[row][col];
-        }
-        catch(err){
+        if (row < y2*8 || row >= otherspace.data.length + y2*8 || col < x2*16 || col >= otherspace.data[row - y2*8].length + x2*16){
           var char2 = '';
+        } else {
+          var char2 = otherspace.data[row - y2*8][col - x2*16];
         }
+        //console.log(row,col,char1,char2);
         newrow.push(charcomb(char1,char2));
       }
       newspace.push(newrow);
@@ -381,6 +371,10 @@ function Space(){
     let newspace2 = new Space()
     newspace2.data = newspace;
     return newspace2;
+  }
+  this.combto = function(otherspace, charcomb, y1=0, x1=0, y2=0, x2=0){
+    var lcol = Math.min(x1,x2); var ucol = Math.max(Math.max.apply(null,this.data.map((row)=>{return row.length;}))+x1,Math.max.apply(null,otherspace.data.map((row)=>{return row.length;}))+x2);
+
   }
   this.writefile = function(filename){ //Writes internal data to a file
     fs.writeFile(filename,this.data.map((row)=>{return row.join('');}).join('\n'),(err)=>{console.log(err);});
@@ -406,7 +400,7 @@ function Space(){
     }
     return write
   }
-  this.sub = function(otherspace, x1=0, y1=0, x2=0, y2=0){
+  this.sub = function(otherspace, y1=0, x1=0, y2=0, x2=0){
     return this.comb(otherspace,(char1,char2)=>{
       if (char1 == char2){
         return '';
@@ -417,7 +411,7 @@ function Space(){
       }
     }, x1, y1, x2, y2)
   }
-  this.add = function(otherspace, x1=0, y1=0, x2=0, y2=0){
+  this.add = function(otherspace, y1=0, x1=0, y2=0, x2=0){
     return this.comb(otherspace,(char1,char2)=>{
       if (char2 == ''){
         return char1;
@@ -425,6 +419,9 @@ function Space(){
         return char2;
       }
     }, x1, y1, x2, y2)
+  }
+  this.addto = function(otherspace, y1=0, x1=0, y2=0, x2=0){ //Fix this later (create a GitHub issue)
+    this.data = this.add(otherspace, y1, x1, y2, x2).data;
   }
 }
 exports.Space = Space
