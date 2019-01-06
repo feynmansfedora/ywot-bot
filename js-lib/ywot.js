@@ -150,6 +150,11 @@ class World extends EventEmitter{
       }
       return true;
     }
+    function cachewrite(newdata,y,x){ //THIS DOES NOT HANDLE NEGATIVE Y AND X
+      let cacheminx = Math.min.apply(null, cached.map(coord => coord[1]));
+      let cacheminy = Math.min.apply(null, cached.map(coord => coord[0]));
+      cachespace.addto(newdata, -cacheminy, -cacheminx, y, x);
+    }
     this.getwritequeue = function(){ //External getter to make writequeue private
       return writequeue;
     }
@@ -183,6 +188,7 @@ class World extends EventEmitter{
           console.log('made callback');
           spaceout = new Space();
           spaceout.fromfetch(message,dimension);
+          cachewrite(spaceout,dimension[0],dimension[1]);
           callback(spaceout);
         }
         if (message.kind === 'channel'){ //Change to switch-case
@@ -192,7 +198,15 @@ class World extends EventEmitter{
           this.emit('cursor', message.positions, message.sender);
         }
         if (message.kind === 'tileUpdate'){
-          let tilekeys = Object.keys(message.tiles).map(coord => coord.split(',').map(num => parseInt(num)));
+          let tilekeys = Object.keys(message.tiles).map(coord =>coord.split(',').map(num => parseInt(num)));
+          for (i=0; i<tilekeys.length; i++){
+            let tile = message.tiles[tilekeys[i]].content;
+            let tilespace = new Space();
+            tilespace.fromtile(tile);
+            console.log(tile);
+            console.log(tilespace.data, tilekeys[i]);
+            cachewrite(tilespace, tilekeys[i][0], tilekeys[i][1]);
+          }
           this.emit('tileUpdate', message.sender, message.source, message.tiles, tilekeys);
         }
       });
@@ -363,7 +377,7 @@ function Space(){
         } else {
           var char2 = otherspace.data[row - y2*8][col - x2*16];
         }
-        //console.log(row,col,char1,char2);
+        console.log(row,col,char1,char2);
         newrow.push(charcomb(char1,char2));
       }
       newspace.push(newrow);
