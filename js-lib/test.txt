@@ -1,0 +1,20 @@
+this is a test document
+with weird, uneven
+row lengths                                     |&
+and a slightly incorrect total lengths
+       - ^&&&&<that wont be edited lol
+   - &
+ &&
+
+right here that's line 9
+guess what guys this might not works
+shortline
+shorter
+short
+sh
+
+^thats a blank line
+and these are some blank ampersnads&&&&&&&&3
+333&&&&&&&&G333&&&33&3&3&8
+lol here are some escape characters
+&&\&\&\\& \&  terst &&\&\&\\\&\&

@@ -58,9 +58,8 @@ class World extends EventEmitter{
     var writequeue = new Set(); //Packs writes to maximum accepted by server optimally
     var sockclosed = false; //If the sock is closed, pushes requests back to YWOT
     var self = this; //Good context for a .on command (ensures a callback to this obj)
-    var cached = []; //The set of rectangles representing all positions which have been modified
+    var cached = []; //The set of rectangles representing all positions which have been modified; note: sorted by miny then by minx
     var cachespace = new Space(); //The current internal cache of the world's state
-    var modified = false; //A record of if rectangles have been modified
     function newqueue(data,lrg){ //Internal call to queue up in YWOT and add it to queue
       client.newpush(lrg);
       pushqueue.push(data);
@@ -87,6 +86,7 @@ class World extends EventEmitter{
       }, 1000); //Reconstructs websocket in 1 second
     }
     function getcached(minY,minX,maxY,maxX){ //Either gets the cached data over the given area or returns false
+      if (modified) merge();
       if (iscached(minX,minY,maxX,maxY)){
         return cachespace.getrange(minX,minY,maxX,maxY);
       } else {
@@ -115,7 +115,7 @@ class World extends EventEmitter{
     function iscached(minX,minY,maxX,maxY){ //Is the region cached?
       let check = [minY,minX,maxY,maxX];
       let edgecheck = [];
-      for (i=0; i<=cached.length; i++){
+      for (let i=0; i<=cached.length; i++){
         let rectangle = cached[i];
         if (!intersects(rectangle,check)){
           continue;
@@ -150,6 +150,18 @@ class World extends EventEmitter{
       }
       return true;
     }
+    function cachewrite(newdata,y,x){ //The handler for all new additions to cache; takes in a space and adds it, add y and x to
+      mergeadd(newdata.tilelength(),y,x);
+      cachespace.addto(newdata,cached[0][0],cached[0][1],y,x);
+    }
+    function mergeadd(datalength,y,x){
+      let i = 0;
+      while (i < cached.length && (cached[i][0] < y || cached[i][1] < x)){
+        i += 1;
+      }
+      cached.splice(i,0,[y,x,datalength[0]+y,datalength[1]+x]);
+      //TODO: actually merge rectangles (note: the way this algo works, optimization may be possible)
+    }
     this.getwritequeue = function(){ //External getter to make writequeue private
       return writequeue;
     }
@@ -169,7 +181,7 @@ class World extends EventEmitter{
           var tiles = Object.keys(message.tiles);
           var content = Object.values(message.tiles);
           message = {};
-          for (var i=0; i<tiles.length; i++){
+          for (let i=0; i<tiles.length; i++){
             console.log('coordinate', i);
             if (content[i] === null){
               message[tiles[i]] = '                                                                                                                                ';
@@ -183,6 +195,7 @@ class World extends EventEmitter{
           console.log('made callback');
           spaceout = new Space();
           spaceout.fromfetch(message,dimension);
+          cachewrite(spaceout,dimension[0],dimension[1]);
           callback(spaceout);
         }
         if (message.kind === 'channel'){ //Change to switch-case
@@ -193,6 +206,12 @@ class World extends EventEmitter{
         }
         if (message.kind === 'tileUpdate'){
           let tilekeys = Object.keys(message.tiles).map(coord => coord.split(',').map(num => parseInt(num)));
+          for (let i=0; i<tilekeys.length; i++){
+            let tile = message.tiles[tilekeys[i]].content;
+            let tilespace = new Space();
+            tilespace.fromtile(tile);
+            cachewrite(tilespace, tilekeys[i][0], tilekeys[i][1]);
+          }
           this.emit('tileUpdate', message.sender, message.source, message.tiles, tilekeys);
         }
       });
@@ -222,7 +241,7 @@ class World extends EventEmitter{
       }
     }
     function formatwrite(chars){ //Formats chars into pushable format
-      for (var i=0; i<chars.length; i++){ //Iterates through characters, inserts a zero at the 4th position (for timestamp), and i at end for confirmation number
+      for (let i=0; i<chars.length; i++){ //Iterates through characters, inserts a zero at the 4th position (for timestamp), and i at end for confirmation number
         chars[i].splice(4,0,0);
         chars[i].push(i);
       }
@@ -230,10 +249,10 @@ class World extends EventEmitter{
     }
     this.write = function(chars){ //tileY, tileX, charY, charX, char
       let oldlength = writequeue.size
-      for (var i=0; i<chars.length; i++){
+      for (let i=0; i<chars.length; i++){
         writequeue.add(chars[i]);
       }
-      for (var i=0; i<Math.floor(writequeue.size/200-oldlength/200)+1; i++){
+      for (let i=0; i<Math.floor(writequeue.size/200-oldlength/200)+1; i++){
         newqueue('USE WRITEQUEUE', this);
       }
     }
@@ -262,7 +281,7 @@ class World extends EventEmitter{
         return finrects
       }
       coords = split(coords); //Transforms into server-usable coding
-      for (var i=0; i<coords.length; i++){ //Loops through all sub-rectangles
+      for (let i=0; i<coords.length; i++){ //Loops through all sub-rectangles
         coords[i] = {"minY":coords[i][0], "minX":coords[i][1], "maxY":coords[i][2], "maxX":coords[i][3]} //Parses to correct format
       }
       newqueue(`{"fetchRectangles":${JSON.stringify(coords)},"kind":"fetch","v":"3"}`, this); //Queues cmd
@@ -271,22 +290,33 @@ class World extends EventEmitter{
     }
   }
 }
-
 function Space(){
   this.data = []
-  function padslice(array, min, max, padchar){ //This pads in extra characters outside of the range (only in the positive direction)
-    if (this.data.length > max){
-      let curslice = this.data.slice(min,this.data.length)
-      for (i=0; i<this.data.length-max; i++){
+  function trim(array){ //Trims empty characters from either side of the array
+    while(array[this.length-1] == ''){
+      array.splice(-1,1);
+    }
+    return array
+  }
+  function padslice(array, min, max, padchar){ //This pads in extra characters outside of the range
+    let curslice = []
+    for (let i=min; i<max; i++){
+      if (i<0 || i>array.length){
         if (typeof padchar == typeof []){
           curslice.push(padchar.slice(0));
         } else {
           curslice.push(padchar);
         }
+      } else {
+        curslice.push(array[i]);
       }
-      return curslice
     }
-    return this.data.slice(min,max);
+    return curslice;
+  }
+  this.tilelength = function (){ //Returns [y,x] y and x being the respective vertical and horizontal lengths of the Space
+    let y = Math.ceil(this.data.length/8);
+    let x = Math.ceil(Math.max.apply(null,this.data.map(row => row.length))/16);
+    return [y,x];
   }
   this.fromfetch = function (fetch,dimension){ //Takes in a fetch (from the fetch callback), and edits internal data to match
     //Corrects to single dimension assuming requests always add up to a rectangle.
@@ -303,7 +333,7 @@ function Space(){
       while (x<=maxx){
         console.log('converting at coordinate', x, y);
         var content = fetch[[x,y]];
-        for (i=0; i<8; i++){
+        for (let i=0; i<8; i++){
           rows[i].push.apply(rows[i], content.slice(i*16,i*16+16).split(''));
         }
         x++;
@@ -345,10 +375,15 @@ function Space(){
     this.data = fs.readFileSync(filename, 'utf8').split('\n').slice(0,-1).map((row)=>{return splitesc(row);});
   }
   this.comb = function(otherspace, charcomb, y1=0, x1=0, y2=0, x2=0){
-    //location handling is completely and utterly broken (i.e. it doesnt exist)
-    var lcol = Math.min(x1,x2)*16; var ucol = Math.max(Math.max.apply(null,this.data.map((row)=>{return row.length;}))+x1,Math.max.apply(null,otherspace.data.map((row)=>{return row.length;}))+x2);
-    var lrow = Math.min(y1,y2)*8; var urow = Math.max(this.data.length+y1, otherspace.data.length+y2);
+    var lcol = Math.min(x1,x2)*16; var uthis = Math.max.apply(null,this.data.map(row => row.length))+x1*16; var uotherspace = Math.max.apply(null,otherspace.data.map(row => row.length))+x2*16; var ucol = Math.max(uthis,uotherspace);
+    var lrow = Math.min(y1,y2)*8; var urow = Math.max(this.data.length+y1*8,otherspace.data.length+y2*8);
+    /*console.log(this.data.length,y1,otherspace.data.length,y2);
     console.log(lcol,lrow,ucol,urow);
+    console.log(y1,x2,y2,x2);
+    console.log(this.data.length,otherspace.data.length);*/
+    console.log(lcol,lrow,ucol,urow);
+    console.log(otherspace.data);
+    //if (this.data.length > 0) console.log(this.data[0].length,otherspace.data[0].length)
     var newspace = [];
     for (var row=lrow; row<urow; row++){
       var newrow = []
@@ -366,22 +401,21 @@ function Space(){
         //console.log(row,col,char1,char2);
         newrow.push(charcomb(char1,char2));
       }
-      newspace.push(newrow);
+      newspace.push(trim(newrow));
     }
     let newspace2 = new Space()
     newspace2.data = newspace;
     return newspace2;
   }
   this.combto = function(otherspace, charcomb, y1=0, x1=0, y2=0, x2=0){
-    var lcol = Math.min(x1,x2); var ucol = Math.max(Math.max.apply(null,this.data.map((row)=>{return row.length;}))+x1,Math.max.apply(null,otherspace.data.map((row)=>{return row.length;}))+x2);
-
+    this.data = this.comb(otherspace, charcomb, y1=0, x1=0, y2=0, x2=0).data;
   }
   this.writefile = function(filename){ //Writes internal data to a file
     fs.writeFile(filename,this.data.map((row)=>{return row.join('');}).join('\n'),(err)=>{console.log(err);});
   }
   this.gettile = function(y,x){ //Returns the tile at the position (positive only, y+ down, x+ right), treating topleft as 0,0
     tilespace = new Space();
-    tilespace.data = padslice(this.data,8*y,8*y+8,['&','&','&','&','&','&','&','&']).map(row => padslice(row,16*x,16*x+16,'&'));
+    tilespace.data = padslice(this.data,8*y,8*y+8,['&','&','&','&','&','&','&','&','&','&','&','&','&','&','&','&']).map((row) => {console.log(row); return padslice(row,16*x,16*x+16,'&')});
     return tilespace;
   }
   this.getrange = function(minY,minX,maxY,maxX){ //Similar to gettile, except with a range of tiles (returns '' for areas where there isn't one)
@@ -409,22 +443,32 @@ function Space(){
       } else{
         return char1
       }
-    }, x1, y1, x2, y2)
+    }, x1, y1, x2, y2);
   }
   this.add = function(otherspace, y1=0, x1=0, y2=0, x2=0){
-    return this.comb(otherspace,(char1,char2)=>{
+    return this.comb(otherspace, (char1,char2)=>{
       if (char2 == ''){
         return char1;
       } else{
         return char2;
       }
-    }, x1, y1, x2, y2)
+    }, x1, y1, x2, y2);
   }
   this.addto = function(otherspace, y1=0, x1=0, y2=0, x2=0){ //Fix this later (create a GitHub issue)
-    this.data = this.add(otherspace, y1, x1, y2, x2).data;
+    this.combto(otherspace, (char1,char2)=>{
+      if (char2 == ''){
+        return char1;
+      } else{
+        return char2;
+      }
+    }, y1, x1, y2, x2);
   }
 }
 exports.Space = Space
+
+function CacheSpace(){
+  this.linestart = [];
+}
 
 exports.YWOT = YWOT;
 exports.World = World;
