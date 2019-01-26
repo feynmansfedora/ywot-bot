@@ -274,21 +274,37 @@ function Space(){
     this.data = fs.readFileSync(filename, 'utf8').split('\n').slice(0,-1).map(row => splitesc(row));
   }
   this.comb = function(otherspace, charcomb, x1=0, y1=0, x2=0, y2=0){ //Adds another Space to it, and returns the sum.
-    var lcol = Math.min(x1,x2); var ucol = Math.max(Math.max.apply(null,this.data.map(row => row.length))+x1,Math.max.apply(null,otherspace.data.map(row => row.length))+x2);
+    lrow1 = y1*8; lrow2 = y2*8; lcol1 = x1*16; lcol2 = x2*16; //The characters at which the spaces start
+    var lrow = Math.min(lrow1,lrow2);
+    var urow = Math.max(lrow1+this.data.length, lrow2+otherspace.data.length);
+    var lcol = Math.min(lcol1,lcol2);
     var newspace = [];
-    for (var row=Math.min(y1,y2); row<Math.max(this.data.length+y1, otherspace.data.length+y2); row++){
+    for (var row=lrow; row<urow; row++){
+      var row1 = row-lrow1; //The row in this.data
+      var row2 = row-lrow2; //The row in otherspace.data
       var newrow = []
+      if(row1 >= 0 && row1 < this.data.length){
+        var thisline = this.data[row1];
+      } else {
+        var thisline = [];
+      }
+      if (row2 >= 0 && row2 < otherspace.data.length){
+        var otherline = otherspace.data[row2];
+      } else {
+        var otherline = [];
+      }
+      var ucol = Math.max(lcol1+thisline.length,lcol2+otherline.length);
       for (var col=lcol; col<ucol; col++){
-        try{
-          var char1 = this.data[row][col];
-        }
-        catch(err){
+        var col1 = col-lcol1;
+        var col2 = col-lcol2;
+        if(col1 >= 0 && col1 < thisline.length){ //BAD
+          var char1 = thisline[col1]; //WRONG
+        } else {
           var char1 = '';
         }
-        try{
-          var char2 = otherspace.data[row][col];
-        }
-        catch(err){
+        if(col2 >= 0 && col2 < otherline.length){ //BAD
+          var char2 = otherline[col2]; //WRONG
+        } else {
           var char2 = '';
         }
         newrow.push(charcomb(char1,char2));
