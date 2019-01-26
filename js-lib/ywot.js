@@ -359,32 +359,43 @@ function Space(){
     this.data = fs.readFileSync(filename, 'utf8').split('\n').slice(0,-1).map((row)=>{return splitesc(row);});
   }
   this.comb = function(otherspace, charcomb, y1=0, x1=0, y2=0, x2=0){
-    //location handling is completely and utterly broken (i.e. it doesnt exist)
-    var lcol = Math.min(x1,x2)*16; var ucol = Math.max(Math.max.apply(null,this.data.map((row)=>{return row.length;}))+x1,Math.max.apply(null,otherspace.data.map((row)=>{return row.length;}))+x2);
-    var lrow = Math.min(y1,y2)*8; var urow = Math.max(this.data.length+y1, otherspace.data.length+y2);
-    console.log(lcol,lrow,ucol,urow);
-    var newspace = [];
-    for (var row=lrow; row<urow; row++){
-      var newrow = []
-      for (var col=lcol; col<ucol; col++){
-        if (row < y1*8 || row >= this.data.length + y1*8 || col < x1*16 || col >= this.data[row - y1*8].length + x1*16){
-          var char1 = '';
-        } else {
-          var char1 = this.data[row - y1*8][col - x1*16];
-        }
-        if (row < y2*8 || row >= otherspace.data.length + y2*8 || col < x2*16 || col >= otherspace.data[row - y2*8].length + x2*16){
-          var char2 = '';
-        } else {
-          var char2 = otherspace.data[row - y2*8][col - x2*16];
-        }
-        console.log(row,col,char1,char2);
-        newrow.push(charcomb(char1,char2));
-      }
-      newspace.push(newrow);
+    let yflip = y2>=y1 ? 1 : -1 //A representation of which space comes first on the y axis (1=this, -1=otherspace)
+    let xflip = x2>=x1 ? 1 : -1 //Same as above
+    let ydis = (y2-y1)*yflip; //Absolute y displacement between the two spaces
+    let xdis = (x2-x1)*xflip; //Same as above
+    if (yflip==-1){
+      var maxy = Math.max(this.data.length,ydis*8+otherspace.data.length);
+    } else {
+      var maxy = Math.max(ydis*8+this.data.length,otherspace.data.length);
     }
-    let newspace2 = new Space()
-    newspace2.data = newspace;
-    return newspace2;
+    if (xflip == -1){
+      let otherspacemax = Math.max.apply(null,otherspace.data.map(row => row.length));
+      let thismax = Math.max.apply(null,this.data.map(row => row.length)) + xdis;
+      var maxx = Math.max(thismax,otherspacemax);
+    } else {
+      let otherspacemax = Math.max.apply(null,otherspace.data.map(row => row.length)) + xdis;
+      let thismax = Math.max.apply(null,this.data.map(row => row.length));
+      var maxx = Math.max(thismax,otherspacemax);
+    }
+    let newdata = []; //The data storage for the final space
+    for (let y=0; y<maxy; y++){
+      let newline = [];
+      let thisline = this.data[y];
+      let otherline = otherspace.data[y];
+      for (let x=0; x<maxx; x++){
+        let ydis0 = ydis*(yflip+1)/2; let xdis0 = xdis*(xflip+1)/2; //zeroes out displacement factors (-1 => 0, 1 => dis[x,y])
+        let otherdefined = y-ydis0>0 && y-ydis0<otherspace.data.length && x-xdis0>0 && x-xdis0<otherline.length;
+        ydis0 = ydis-ydis0; xdis0 = xdis-xdis0; //Changes dis[x,y]0 to (-1 => dis[x,y], 1 => 0)
+        let thisdefined = y-ydis0>0 && y-ydis0<this.data.length && x-xdis0>0 && x-xdis0<thisline.length;
+        let thischar = (thisdefined) ? thisline[x] : '';
+        let otherchar = (otherdefined) ? otherline[x] : '';
+        newline.push(charcomb(thischar, otherchar));
+      }
+      newdata.push(newline);
+    }
+    let returnspace = new Space();
+    returnspace.data = newdata;
+    return returnspace
   }
   this.combto = function(otherspace, charcomb, y1=0, x1=0, y2=0, x2=0){
     var lcol = Math.min(x1,x2); var ucol = Math.max(Math.max.apply(null,this.data.map((row)=>{return row.length;}))+x1,Math.max.apply(null,otherspace.data.map((row)=>{return row.length;}))+x2);
@@ -439,6 +450,10 @@ function Space(){
   }
 }
 exports.Space = Space
+
+function Cache(){ //Cache object for World
+
+}
 
 exports.YWOT = YWOT;
 exports.World = World;
