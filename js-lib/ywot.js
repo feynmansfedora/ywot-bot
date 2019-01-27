@@ -319,9 +319,13 @@ function Space(){
     fs.writeFile(filename,this.data.map(row => row.join('')).join('\n'),(err)=>{console.log(err);});
   }
   this.gettile = function(y,x){ //Returns the tile at the position (positive only, y+ down, x+ right), treating topleft as 0,0
-    //TODO: improve ampersand-handling. They are treated as if they don't exist. XO
-    tilespace = new Space()
-    tilespace.data = this.data.slice(8*y,8*y+8).map(row => row.slice(16*x,16*x+16));
+    tilespace = new Space();
+    tilespace.data = padslice(this.data,8*y,8*y+8,['&','&','&','&','&','&','&','&']).map(row => padslice(row,16*x,16*x+16,'&'));
+    return tilespace;
+  }
+  this.getrange = function(minY,minX,maxY,maxX){ //Similar to gettile, except with a range of tiles (returns '' for areas where there isn't one)
+    tilespace = new Space();
+    tilespace.data = padslice(this.data,8*minY,8*maxY,new Array(16*maxX-16*minX).fill('&')).map(row => padslice(row,16*minX,16*maxX,'&'));
     return tilespace;
   }
   this.towrite = function(tiley,tilex){ //Outputs the "write" structure to be plugged into World.write().
