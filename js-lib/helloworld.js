@@ -1,6 +1,6 @@
-const ywot = require(./ywot.js); //Includes main library
+const ywot = require('./ywot.js'); //Includes main library
 var client = new ywot.YWOT(); //Global websocket manager
-var main = ywot.openworld('testworld'); //This function is required to interface with specific worlds, in this case
+var main = client.openworld('testworld'); //This function is required to interface with specific worlds, in this case
 //https://www.yourworldoftext.com/testworld. Go check for the results there.
 var textspace = new ywot.Space(); //The main spatial manipulation object in ywot
 textspace.readfile('./helloworld.txt'); //Reads the local helloworld.txt file into the Space's data
