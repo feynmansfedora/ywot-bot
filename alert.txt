@@ -2,7 +2,7 @@ ________________________________________________________________
 |Hey, this is ~hdawg777 again! Sorry about the first few times.|
 |Now, I'm building a bot that runs over this world and responds|
 |to the letter Ω (alt-Z on Mac, ALT+234 on Windows)! It'll box |
-|out a specific area. More features coming soon. :)            |
+|out a specific area. When you have the box, type a command:   |
 |-Type "back" to undo the box                                  |
 |-Type "bsck" to undo the box with omegas intact (note this    |
 |will not protect against future replacement).                 |
