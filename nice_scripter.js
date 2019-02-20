@@ -45,6 +45,7 @@ var cmdkeys = {"back":(tiley,tilex,tile)=>{
 },"time":(tiley,tilex,tile)=>{
   rsrv(gettime, [tiley,tilex]);
   gettime(tiley,tilex,tile);
+  setTimeout(()=>{unrsrv([tiley,tilex]);},30*1000);
 }};
 
 //Reservations by omega commands:
@@ -54,8 +55,8 @@ function rsrv(cmd,tile){
   rsrvtiles.push(tile);
   rsrvcmds[tile] = cmd;
 }
-function unrsrv(cmd,tile){ //Currently runs on a crazy slow indexOf system, but sorting optimizations should/could be added if necessary
-  rsrvtiles.splice(indexOf(tile),1);
+function unrsrv(tile){ //Currently runs on a crazy slow indexOf system, but sorting optimizations should/could be added if necessary
+  rsrvtiles.splice(rsrvtiles.indexOf(tile),1);
   rsrvcmds[tile] = false;
 }
 
