@@ -161,19 +161,6 @@ class World extends EventEmitter{
       return `{"edits":${JSON.stringify(chars)},"kind":"write"}`; //Externals
     }
     this.write = function(chars){ //tileY, tileX, charY, charX, char
-      //
-      //
-      //
-      /*var batch = []; //Merges command into batches
-      for (var i=0; i<chars.length; i++){
-        if (batch.length == 200){
-          writequeue.push.apply(writequeue,batch);
-          newqueue('USE WRITEQUEUE', this);
-          batch = [];
-        }
-        batch.push(chars[i]);
-      }
-      writequeue.push.apply(writequeue,batch);*/
       let oldlength = writequeue.size
       for (var i=0; i<chars.length; i++){
         writequeue.add(chars[i]);
