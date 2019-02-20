@@ -217,6 +217,22 @@ class World extends EventEmitter{
 
 function Space(){
   this.data = []
+  function padslice(array, min, max, pad){
+    sliced = array.slice(Math.max(min,0),Math.min(max,array.length-1));
+    if (min < 0){
+      for (let i=min; i<0; i++){
+        let appcopy = pad.slice();
+        sliced.unshift(appcopy);
+      }
+    }
+    if (max > array.length-1){ //technically redundant but for readability
+      for (let i=array.length-1; i<max; i++){
+        let appcopy = pad.slice();
+        sliced.push(appcopy);
+      }
+    }
+    return sliced
+  }
   this.fromfetch = function (fetch,dimension){ //Takes in a fetch (from the fetch callback), and edits internal data to match
     //Corrects to single dimension assuming requests always add up to a rectangle.
     minx = Math.min.apply(null, dimension.map(a => a.minX)); miny = Math.min.apply(null, dimension.map(a => a.minY));
@@ -320,12 +336,12 @@ function Space(){
   }
   this.gettile = function(y,x){ //Returns the tile at the position (positive only, y+ down, x+ right), treating topleft as 0,0
     tilespace = new Space();
-    tilespace.data = padslice(this.data,8*y,8*y+8,['&','&','&','&','&','&','&','&']).map(row => padslice(row,16*x,16*x+16,'&'));
+    tilespace.data = padslice(this.data,8*y,8*y+8,['','','','','','','','']).map(row => padslice(row,16*x,16*x+16,''));
     return tilespace;
   }
   this.getrange = function(minY,minX,maxY,maxX){ //Similar to gettile, except with a range of tiles (returns '' for areas where there isn't one)
     tilespace = new Space();
-    tilespace.data = padslice(this.data,8*minY,8*maxY,new Array(16*maxX-16*minX).fill('&')).map(row => padslice(row,16*minX,16*maxX,'&'));
+    tilespace.data = padslice(this.data,8*minY,8*maxY,new Array(16*maxX-16*minX).fill('')).map(row => padslice(row,16*minX,16*maxX,''));
     return tilespace;
   }
   this.towrite = function(tiley,tilex){ //Outputs the "write" structure to be plugged into World.write().
