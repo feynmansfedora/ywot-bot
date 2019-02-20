@@ -357,7 +357,7 @@ function Space(){
     let row = Array(x*16).fill(char);
     this.data = []; //Clears out Space
     for (let i=0; i<y*8; i++){
-      this.data.push(row.splice());
+      this.data.push(row.slice());
     }
   }
 }
