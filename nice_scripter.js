@@ -5,6 +5,7 @@ const ywot = require('./ywot.js');
 
 var client = new ywot.YWOT();
 var main = client.openworld('');
+var passkey = client.openworld('a7jrxn99')
 var alert = new ywot.Space();
 alert.readfile('./alert.txt');
 var cmdbox = new ywot.Space()
@@ -19,13 +20,12 @@ main.on('channel',(sender)=>{thissender = sender;});
 function gettime(tiley, tilex, tile){
   console.log('gettime called');
   let today = new Date();
-  let date = (' ' + today.toISOString().substring(0,10)).padEnd(16, ' ').split('');
-  let time = (' ' + today.toISOString().slice(11,19) + 'Z').padEnd(16, ' ').split('');
-  let space = new Array(16).fill(' ');
-  let blank = new Array(16).fill('');
+  let date = ('  ' + today.toISOString().substring(0,10)).padEnd(16, ' ').split('');
+  let time = ('  ' + today.toISOString().slice(11,19) + 'Z').padEnd(16, ' ').split('');
+  let space = Array(16).fill(' ');
   let newspace = new ywot.Space();
-  let curspace = new ywot.Space()
-  newspace.data = [space, date, time, space, blank, blank.slice(), blank.slice(), blank.slice()]
+  let curspace = new ywot.Space();
+  newspace.data = [space, date, time, space, space, space, space, space]
   curspace.fromtile(tile);
   newspace.sub(curspace);
   main.write(newspace.towrite(tiley,tilex));
