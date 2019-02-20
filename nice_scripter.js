@@ -2,10 +2,10 @@
 //Protects those tiles with the tileUpdate'r
 //Responds to Ω with an empty box.
 const ywot = require('./ywot.js');
+const fs = require('fs');
 
 var client = new ywot.YWOT();
-var main = client.openworld('');
-var passkey = client.openworld('a7jrxn99')
+var main = client.openworld('test');
 var alert = new ywot.Space();
 alert.readfile('./alert.txt');
 var cmdbox = new ywot.Space()
@@ -17,7 +17,7 @@ var thissender;
 main.on('channel',(sender)=>{thissender = sender;});
 
 //"User-defined" tools
-function gettime(tiley, tilex, tile){
+function gettime(user, tiley, tilex, tile){
   console.log('gettime called');
   let today = new Date();
   let date = ('  ' + today.toISOString().substring(0,10)).padEnd(16, ' ').split('');
@@ -30,22 +30,53 @@ function gettime(tiley, tilex, tile){
   newspace.sub(curspace);
   main.write(newspace.towrite(tiley,tilex));
 }
-var cmdkeys = {"back":(tiley,tilex,tile)=>{
+var elevateduser = ''; //The user account with elevated priveleges (me)
+var curpass;
+function passcheck(user, tiley, tilex, tile){ //checks if correct passcode is entered
+  console.log('passcheck called at',tiley,tilex);
+  let hashspace = new ywot.Space();
+  hashspace.fillchar('#');
+  let passnotice = new ywot.Space();
+  passnotice.fillchar('');
+  passnotice.data[1] = ' Pass \\n:       '.split();
+  passnotice.data[7] = ' Incorrect pass. '.split();
+  console.log('curpass:', curpass);
+  console.log('input', tile.substring(32, 48));
+  if (tile.substring(32, 48) == curpass){
+    main.write(hashspace.towrite(tiley, tilex));
+    elevateduser = user; //what priveleges does an elevated user have?
+    console.log('user elevated')
+  } else {
+    main.write(passnotice.towrite(tiley, tilex));
+  }
+}
+const worldkey = fs.readFileSync('.key.txt', 'utf8').split('\n')[0];
+var passkey = client.openworld(worldkey);
+var cmdkeys = {"back":(user, tiley,tilex,tile)=>{
   let tilereplace = new ywot.Space();
   let curtile = new ywot.Space();
   curtile.fromtile(tile);
   tilereplace.fromtile(old[[tiley,tilex]].replace('Ω',' '));
   main.write(tilereplace.sub(curtile).towrite(tiley,tilex));
-},"bsck":(tiley,tilex,tile)=>{
+},"bsck":(user, tiley,tilex,tile)=>{
   let tilereplace = new ywot.Space();
   let curtile = new ywot.Space();
   curtile.fromtile(tile);
   tilereplace.fromtile(old[[tiley,tilex]]);
   main.write(tilereplace.sub(curtile).towrite(tiley,tilex));
-},"time":(tiley,tilex,tile)=>{
+},"time":(user, tiley,tilex,tile)=>{
   rsrv(gettime, [tiley,tilex]);
   gettime(tiley,tilex,tile);
   setTimeout(()=>{unrsrv([tiley,tilex]);},600*1000);
+},"elevate":(user, tiley,tilex,tile)=>{
+  curpass = '';
+  var posschar = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+  for (let i=0; i<16; i++) curpass += posschar.charAt(Math.floor(Math.random()*posschar.length));
+  let passprint = new ywot.Space();
+  passprint.fillchar(' ');
+  passprint.data[1] = curpass;
+  passkey.write(passprint.towrite(0,0));
+  rsrv(passcheck, [tiley,tilex]);
 }};
 
 //Reservations by omega commands:
@@ -80,7 +111,7 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   if (valid.length == 0){ //reserved tiles handling
     for (i=0; i<rsrvdo.length; i++){
       let cmd = rsrvdo[i];
-      rsrvcmds[cmd](cmd[0],cmd[1],tiles[cmd].content);
+      rsrvcmds[cmd](sender, cmd[0],cmd[1],tiles[cmd].content);
     }
   }
   let omegapos = tilekeys.filter(tile => tiles[tile].content.includes('Ω'));
@@ -103,7 +134,7 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
       console.log(cmd);
       for (j=0; j<Object.keys(cmdkeys).length; j++){ //Iterates through callback functions and each command caller name
         if (tiles[cmd].content.includes(Object.keys(cmdkeys)[j])){ //If the given edited tile has the cmd caller name
-          Object.values(cmdkeys)[j](cmd[0],cmd[1],tiles[cmd].content); //Calls callback; gives coordinates
+          Object.values(cmdkeys)[j](sender, cmd[0],cmd[1],tiles[cmd].content); //Calls callback; gives coordinates
         }
       }
     }
