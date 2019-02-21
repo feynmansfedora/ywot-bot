@@ -45,7 +45,11 @@ var cmdkeys = {"back":(tiley,tilex,tile)=>{
 },"time":(tiley,tilex,tile)=>{
   rsrv(gettime, [tiley,tilex]);
   gettime(tiley,tilex,tile);
+<<<<<<< HEAD
   setTimeout(()=>{unrsrv([tiley,tilex]);},600*1000);
+=======
+  setTimeout(()=>{unrsrv([tiley,tilex]);},30*1000);
+>>>>>>> 4e49a1851e87c122940c21f37618a352250675de
 }};
 
 //Reservations by omega commands:
