@@ -4,7 +4,7 @@ const ws = require('ws');
 const fs = require('fs');
 const EventEmitter = require('events');
 
-class YWOT extends EventEmitter{ /*Manages connection frequency with the server*/
+class YWOT extends EventEmitter{ //Manages connection frequency with the server
   constructor() {
     super();
     this.openworld = function(name){ //Handles websocket creation and houses new world function.
@@ -24,14 +24,14 @@ class YWOT extends EventEmitter{ /*Manages connection frequency with the server*
     this.newpush = function(world){ //Used primarily by World to callback at a good frequency
       pushqueue.push(world);
     }
-    this.emptyqueue = function(world){ //External function
+    this.emptyqueue = function(world){ //External function; empties queue for a given world.
       pushqueue = pushqueue.filter(item => {return item != world;});
       console.log('queue emptied');
     }
     setInterval(()=>{ //Primary function: gives server commands
       if (pushqueue.length > 0){
         pushqueue.shift().servpush(); //Treats pushqueue list like a queue, and runs servpush (hands cmd to server)
-        //servpush is in target object (like World), so multiple worlds can be handled
+        //servpush is in target object (World), so multiple worlds can be handled
         //Prevents 403 error
         console.log('server communications remaining:', pushqueue.length, '; time:', +new Date()); //mainlog
       }
@@ -55,7 +55,7 @@ class World extends EventEmitter{
     var callbacks = []; //For fetch callback (queue for slow server response)
     var dimensions = []; //For fetch dimensions (queue for slow server response) -- easier parsing later
     var pushqueue = []; //Queue of things to push to server; triggered by YWOT.
-    var writequeue = new Set(); //Packs writes to maximum accepted by server optimally
+    var writequeue = []; //Packs writes to maximum accepted by server optimally
     var sockclosed = false; //If the sock is closed, pushes requests back to YWOT
     var self = this; //Good context for a .on command (ensures a callback to this obj)
     function newqueue(data,lrg){ //Internal call to queue up in YWOT and add it to queue
@@ -83,6 +83,43 @@ class World extends EventEmitter{
         };
       }, 1000); //Reconstructs websocket in 1 second
     }
+    function messagehandler(message){ //Handles all incoming messages to world.
+      message = JSON.parse(message);
+      console.log('message');
+      if (message.kind === 'fetch'){
+        console.log('fetch');
+        callback = callbacks.shift();
+        var tiles = Object.keys(message.tiles);
+        var content = Object.values(message.tiles);
+        message = {};
+        for (var i=0; i<tiles.length; i++){
+          console.log('coordinate', i);
+          if (content[i] === null){
+            message[tiles[i]] = '                                                                                                                                ';
+          }
+          else{
+            message[tiles[i]] = content[i].content;
+          }
+        }
+        console.log('reassociated');
+        let dimension = dimensions.shift();
+        console.log('made callback');
+        let spaceout = new Space();
+        console.log(message, 'message');
+        console.log(dimension, 'dimension');
+        spaceout.fromfetch(message,dimension);
+        callback(spaceout);
+      }
+      if (message.kind === 'channel'){ //Change to switch-case
+        this.emit('channel', message.sender);
+      }
+      if (message.kind === 'cursor'){
+        this.emit('cursor', message.positions, message.sender);
+      }
+      if (message.kind === 'tileUpdate'){
+        this.emit('tileUpdate', message.sender, message.source, message.tiles, Object.keys(message.tiles).map(coord => coord.split(',').map(num => parseInt(num))));
+      }
+    }
     this.getwritequeue = function(){ //External getter to make writequeue private
       return writequeue;
     }
@@ -93,41 +130,7 @@ class World extends EventEmitter{
         console.error('Socket encountered error: ', err.message, 'Closing socket');
         sock.close();
       };
-      sock.on('message', (message) => {
-        message = JSON.parse(message);
-        console.log('message');
-        if (message.kind === 'fetch'){
-          console.log('fetch');
-          callback = callbacks.shift();
-          var tiles = Object.keys(message.tiles);
-          var content = Object.values(message.tiles);
-          message = {};
-          for (var i=0; i<tiles.length; i++){
-            console.log('coordinate', i);
-            if (content[i] === null){
-              message[tiles[i]] = '                                                                                                                                ';
-            }
-            else{
-              message[tiles[i]] = content[i].content;
-            }
-          }
-          console.log('reassociated');
-          dimension = dimensions.shift();
-          console.log('made callback');
-          spaceout = new Space();
-          spaceout.fromfetch(message,dimension);
-          callback(spaceout);
-        }
-        if (message.kind === 'channel'){ //Change to switch-case
-          this.emit('channel', message.sender);
-        }
-        if (message.kind === 'cursor'){
-          this.emit('cursor', message.positions, message.sender);
-        }
-        if (message.kind === 'tileUpdate'){
-          this.emit('tileUpdate', message.sender, message.source, message.tiles, Object.keys(message.tiles).map(coord => coord.split(',').map(num => parseInt(num))));
-        }
-      }); //!!!
+      sock.on('message', messagehandler);
       this.emit('on'); //tells program that World object is now active
     }
     this.servpush = function(){ //Never use outside of YWOT class; gives scheduled data to server
@@ -135,18 +138,17 @@ class World extends EventEmitter{
         client.newpush(this);
         return;
       }
-      var queuetop = pushqueue.shift();
+      var queuetop = pushqueue.shift(); //next request to push
       if (queuetop === 'USE WRITEQUEUE'){ //Writequeue handler
-        if (writequeue.size < 200){ //For minimum size writequeue (less than 200)
-          let format = formatwrite(Array.from(writequeue));
+        if (writequeue.length < 200){ //For minimum size writequeue (less than 200)
+          let format = formatwrite(writequeue);
           sock.send(format); //Sends all of writequeue
-          writequeue = new Set();
+          writequeue = [];
           client.emptyqueue(this); //Removes all calls to World (in YWOT)
+          //BUG: what about fetch????
         }
         else{ //For larger writequeue
-          var arraywritequeue = Array.from(writequeue);
-          sock.send(formatwrite(arraywritequeue.splice(0,200))); //Sends 200 oldest items
-          writequeue = new Set(arraywritequeue)
+          sock.send(formatwrite(writequeue.splice(0,200))); //Sends 200 oldest items
         }
       }
       else{//If it's not a write command, straight up sends it (like a fetch or cursor)
@@ -161,11 +163,11 @@ class World extends EventEmitter{
       return `{"edits":${JSON.stringify(chars)},"kind":"write"}`; //Externals
     }
     this.write = function(chars){ //tileY, tileX, charY, charX, char
-      let oldlength = writequeue.size
+      let oldlength = writequeue.length
       for (var i=0; i<chars.length; i++){
-        writequeue.add(chars[i]);
+        writequeue.push(chars[i]);
       }
-      for (var i=0; i<Math.floor(writequeue.size/200-oldlength/200)+1; i++){
+      for (var i=0; i<Math.floor(writequeue.length/200-oldlength/200)+1; i++){
         newqueue('USE WRITEQUEUE', this);
       }
     }
@@ -233,8 +235,8 @@ function Space(){
       x = minx;
       rows = [[],[],[],[],[],[],[],[]];
       while (x<=maxx){
-        console.log('converting at coordinate', x, y);
-        var content = fetch[[x,y]];
+        console.log('converting at coordinate', y, x);
+        var content = fetch[[y, x]];
         for (i=0; i<8; i++){
           rows[i].push.apply(rows[i], content.slice(i*16,i*16+16).split(''));
         }
@@ -276,7 +278,7 @@ function Space(){
      //reads file w/ error handling; splits by line and maps row into individual characters (good spacing)
     this.data = fs.readFileSync(filename, 'utf8').split('\n').slice(0,-1).map(row => splitesc(row));
   }
-  this.comb = function(otherspace, charcomb, x1=0, y1=0, x2=0, y2=0){ //Adds another Space to it, and returns the sum.
+  this.comb = function(otherspace, charcomb, y1=0, x1=0, y2=0, x2=0){ //Adds another Space to it, and returns the sum.
     lrow1 = y1*8; lrow2 = y2*8; lcol1 = x1*16; lcol2 = x2*16; //The characters at which the spaces start
     var lrow = Math.min(lrow1,lrow2);
     var urow = Math.max(lrow1+this.data.length, lrow2+otherspace.data.length);
@@ -342,7 +344,7 @@ function Space(){
     }
     return write
   }
-  this.sub = function(otherspace, x1=0, y1=0, x2=0, y2=0){
+  this.sub = function(otherspace, y1=0, x1=0, y2=0, x2=0){
     return this.comb(otherspace,(char1,char2)=>{
       if (char1 == char2){
         return '';
@@ -352,6 +354,13 @@ function Space(){
         return char1
       }
     }, x1, y1, x2, y2)
+  }
+  this.fillchar = function(char, y=1, x=1){ //Fills space x,y with char
+    let row = Array(x*16).fill(char);
+    this.data = []; //Clears out Space
+    for (let i=0; i<y*8; i++){
+      this.data.push(row.slice());
+    }
   }
 }
 exports.Space = Space
