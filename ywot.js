@@ -112,9 +112,11 @@ class World extends EventEmitter{
             }
           }
           console.log('reassociated');
-          dimension = dimensions.shift();
+          let dimension = dimensions.shift();
           console.log('made callback');
-          spaceout = new Space();
+          let spaceout = new Space();
+          console.log(message, 'message');
+          console.log(dimension, 'dimension');
           spaceout.fromfetch(message,dimension);
           callback(spaceout);
         }
@@ -233,8 +235,8 @@ function Space(){
       x = minx;
       rows = [[],[],[],[],[],[],[],[]];
       while (x<=maxx){
-        console.log('converting at coordinate', x, y);
-        var content = fetch[[x,y]];
+        console.log('converting at coordinate', y, x);
+        var content = fetch[[y, x]];
         for (i=0; i<8; i++){
           rows[i].push.apply(rows[i], content.slice(i*16,i*16+16).split(''));
         }

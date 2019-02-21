@@ -54,6 +54,33 @@ function passcheck(user, tiley, tilex, tile){ //checks if correct passcode is en
 }
 const worldkey = fs.readFileSync('.key.txt', 'utf8').split('\n')[0]; //Put the world you want to have your key on in the first line of .key.txt
 var passkey = client.openworld(worldkey);
+function inputhold(user, tiley, tilex, tile){
+  let empty = new ywot.Space();
+  empty.fillchar(' ');
+  main.write(empty.towrite(tiley,tilex));
+  console.log('inputhold')
+  if (tile.substring(127,128) == '&'){
+    unrsrv([tiley,tilex]);
+    rsrv(buffer,[tiley,tilex]);
+    main.fetch([tiley, tilex-1, tiley, tilex-1],(space)=>{
+      unrsrv([tiley,tilex]);
+      rsrv((user0,tiley0,tilex0,tile0)=>{
+        hold(space,tiley,tilex);
+      },[tiley,tilex]);
+      hold(space,tiley,tilex);
+    });
+  }
+}
+function hold(space, tiley, tilex){
+  console.log('athold');
+  main.write(space.towrite(tiley,tilex));
+}
+function buffer(user, tiley, tilex, tile){
+  load = new ywot.Space();
+  load.fillchar(' ')
+  load[1] = '   ..........   '.split('');
+  main.write(load.towrite(tiley,tilex));
+}
 var cmdkeys = {"back":(user, tiley,tilex,tile)=>{
   let tilereplace = new ywot.Space();
   let curtile = new ywot.Space();
@@ -80,6 +107,11 @@ var cmdkeys = {"back":(user, tiley,tilex,tile)=>{
   passkey.write(passprint.towrite(0,0));
   rsrv(passcheck, [tiley,tilex]);
   passcheck(user,tiley,tilex,tile);
+},"message":(user,tiley,tilex,tile)=>{ //Reserve a tile for elevated users
+  if (user == elevateduser){
+    console.log('user is priveleged');
+    rsrv(inputhold,[tiley,tilex]);
+  }
 }};
 
 //Reservations by omega commands:
