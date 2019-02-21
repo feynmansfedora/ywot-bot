@@ -1,22 +1,47 @@
 //Starts by clearing out the tiles immediately around centre (changes to a notification about the Ω character).
 //Protects those tiles with the tileUpdate'r
 //Responds to Ω with an empty box.
+
+//Libraries:
 const ywot = require('./ywot.js');
 const fs = require('fs');
 
+//Client, worlds, and text alerts/files
 var client = new ywot.YWOT();
 var main = client.openworld('');
 var alert = new ywot.Space();
+var passkey = client.openworld(fs.readFileSync('.key.txt', 'utf8').split('\n')[0]); //World which contains passkey; put the world where it puts the key in the first line of .key.txt
 alert.readfile('./alert.txt');
-var cmdbox = new ywot.Space()
+var cmdbox = new ywot.Space();
 cmdbox.readfile('./cmdbox.txt');
+
+//Trivial promises
 main.on('on',()=>{
   main.write(alert.towrite(-2,-2));
 });
 var thissender;
 main.on('channel',(sender)=>{thissender = sender;});
 
-//"User-defined" tools
+//"User-defined" tools:
+
+
+//Variables/constants
+var elevateduser = ''; //The user account with elevated priveleges (me)
+var curpass;
+var old = {}; //Old data which back be replaced by the command "back" or "bsck"
+
+//Predefined spaces:
+let hashspace = new ywot.Space();
+hashspace.fillchar('#');
+let passnotice = new ywot.Space();
+passnotice.fillchar(' ');
+passnotice.data[1] = '|Pass \\n:       '.split('');
+passnotice.data[2] = ['','','','','','','','','','','','','','',''];
+passnotice.data[7] = ' Incorrect pass. '.split('');
+let empty = new ywot.Space();
+empty.fillchar(' ');
+
+//Functions and callbacks from cmdkeys
 function gettime(user, tiley, tilex, tile){
   console.log('gettime called');
   let today = new Date();
@@ -25,22 +50,13 @@ function gettime(user, tiley, tilex, tile){
   let space = Array(16).fill(' ');
   let newspace = new ywot.Space();
   let curspace = new ywot.Space();
-  newspace.data = [space, date, time, space, space, space, space, space]
+  newspace.data = [space, date, time, space, space, space, space, space];
   curspace.fromtile(tile);
   newspace.sub(curspace);
   main.write(newspace.towrite(tiley,tilex));
 }
-var elevateduser = ''; //The user account with elevated priveleges (me)
-var curpass;
 function passcheck(user, tiley, tilex, tile){ //checks if correct passcode is entered
   console.log('passcheck called at',tiley,tilex);
-  let hashspace = new ywot.Space();
-  hashspace.fillchar('#');
-  let passnotice = new ywot.Space();
-  passnotice.fillchar(' ');
-  passnotice.data[1] = '|Pass \\n:       '.split('');
-  passnotice.data[2] = ['','','','','','','','','','','','','','',''];
-  passnotice.data[7] = ' Incorrect pass. '.split('');
   console.log('curpass', curpass);
   console.log('attempted pass', tile.substring(32,48));
   if (tile.substring(32, 48) == curpass){
@@ -52,11 +68,7 @@ function passcheck(user, tiley, tilex, tile){ //checks if correct passcode is en
     main.write(passnotice.towrite(tiley, tilex));
   }
 }
-const worldkey = fs.readFileSync('.key.txt', 'utf8').split('\n')[0]; //Put the world you want to have your key on in the first line of .key.txt
-var passkey = client.openworld(worldkey);
 function inputhold(user, tiley, tilex, tile){
-  let empty = new ywot.Space();
-  empty.fillchar(' ');
   main.write(empty.towrite(tiley,tilex));
   console.log('inputhold')
   if (tile.substring(127,128) == '&'){
@@ -81,6 +93,8 @@ function buffer(user, tiley, tilex, tile){
   load[1] = '   ..........   '.split('');
   main.write(load.towrite(tiley,tilex));
 }
+
+//Callbacks for if these strings are ever seen in an omega tile
 var cmdkeys = {"back":(user, tiley,tilex,tile)=>{
   let tilereplace = new ywot.Space();
   let curtile = new ywot.Space();
@@ -96,9 +110,7 @@ var cmdkeys = {"back":(user, tiley,tilex,tile)=>{
 },"time":(user,tiley,tilex,tile)=>{
   rsrv(gettime, [tiley,tilex]);
   gettime(tiley,tilex,tile);
-<<<<<<< HEAD
   setTimeout(()=>{unrsrv([tiley,tilex]);},600*1000);
-=======
   gettime(user,tiley,tilex,tile);
   setTimeout(()=>{unrsrv([tiley,tilex]);},30*1000);
 },"elevate":(user,tiley,tilex,tile)=>{
@@ -116,7 +128,6 @@ var cmdkeys = {"back":(user, tiley,tilex,tile)=>{
     console.log('user is priveleged');
     rsrv(inputhold,[tiley,tilex]);
   }
->>>>>>> privelege-key
 }};
 
 //Reservations by omega commands:
@@ -130,9 +141,10 @@ function unrsrv(tile){ //Currently runs on a crazy slow indexOf system, but sort
   rsrvtiles.splice(rsrvtiles.indexOf(tile),1);
   rsrvcmds[tile] = false;
 }
+var curcmds = []; //Current blocks to run commands in (after omega assignment)
 
-var curcmds = []; //Current blocks to run commands in
-var old = {}; //Old data which back be replaced by the command "back"
+//User interaction handler
+//TODO: simplify with external functions
 main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   console.log('tileUpdate');
   if (sender == thissender){ //Prevents infinite recursion on its own edits
