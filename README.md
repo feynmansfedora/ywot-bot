@@ -115,6 +115,32 @@ main.on('on',()=>{
   }); //Prints the data the bot gets back from a request of tiles between (-100,0) and (100,0).
 })
 ```
+- `cwrite(newtile, oldtile, y, x)` writes newtile to the world efficiently or 'conservatively,' minimizing the number of characters sent to the server with a server-provided 'oldtile' tile string to subtract in order to determine which characters to send. It is send to the world at y, x
+
+Example code:
+```javascript
+main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
+  let blank = new ywot.Space();
+  blank.fillchar(' ');
+  for (let i=0; i<tilekeys.length; i++){
+    main.cwrite(blank, tiles[tilekeys[i]], tilekeys[i][0], tilekeys[i][1]);
+  }
+}
+```
+- `cwrite2(newspace, oldspace, y, x)` performs the same function as cwrite but for two arbitrarily sized spaces (useful for writing against fetches). Also sent to the world at y, x
+
+Example code:
+```javascript
+main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
+  let blank = new ywot.Space();
+  blank.fillchar(' ');
+  for (let i=0; i<tilekeys.length; i++){
+    let uselessspace = new ywot.Space();
+    uselessspace.fromtile(tiles[tilekeys[i]])
+    main.cwrite2(blank, uselessspace, tilekeys[i][0], tilekeys[i][1]);
+  }
+}
+```
 [To top](#documentation)
 ## Space
 This is the text manager. It controls pastes, allows importing from and exporting to files, manipulation between Spaces, cutting out tiles. This is the entirety of text manipulation within the program. Because all it does is process text, it doesn't emit anything and is not an extension of Event Emitter. It does have plenty of methods, though. Notably, the coordinate axes run in odd directions. The x-axis points in the normal direction, but y is inverted (down is positive, up is negative). Also, in most cases y is delivered before x [y,x]. I haven't converted this, and it is recommended to leave this in native form for easy to understand code.
@@ -135,7 +161,7 @@ Example code:
 ```javascript
 space.readfile('./alert.txt');
 ```
-- `comb(otherspace, charcomb, x1=0, y1=0, x2=0, y2=0)` returns Space that is a combination of the object that is running .comb at y1,x1 (with positive y going downwards) and otherspace at y2,x2. For every overlapping character, charcomb(char1,char2) is run on (giving charcomb '' for the respective char at locations where one of either space is not present) the characters located there.
+- `comb(otherspace, charcomb, y1=0, x1=0, y2=0, x2=0)` returns Space that is a combination of the object that is running .comb at y1,x1 (with positive y going downwards) and otherspace at y2,x2. For every overlapping character, charcomb(char1,char2) is run on (giving charcomb '' for the respective char at locations where one of either space is not present) the characters located there.
 
 Example code:
 ```javascript
@@ -163,7 +189,7 @@ Example code:
 ```javascript
 main.write(space.towrite(1,2));
 ```
-- `sub(otherspace, x1=0, y1=0, x2=0, y2=0)` is a specific comb with a charcomb that returns '' when the chars are the same or char1=='' and char1 otherwise.
+- `sub(otherspace, y1=0, x1=0, y2=0, x2=0)` is a specific comb with a charcomb that returns '' when the chars are the same or char1=='' and char1 otherwise.
 
 Example code:
 ```javascript
@@ -171,12 +197,19 @@ var otherspace = new Space();
 otherspace.fromtile('yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&');
 otherspace.sub(space);
 ```
-- `add(otherspace, x1=0, y1=0, x2=0, y2=0)` is a specific comb with a charcomb that returns char1 if char2 is '' and char2 otherwise.
+- `add(otherspace, y1=0, x1=0, y2=0, x2=0)` is a specific comb with a charcomb that returns char1 if char2 is '' and char2 otherwise.
 
 Example code:
 ```javascript
 var otherspace = new Space();
 otherspace.fromtile('yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&yeah&&&&&&&&&&&&');
 otherspace.add(space);
+```
+- `fillchar(char, y=1, x=1)` fills the given Space of size y by x with the char of choice. This is useful for generating text on the fly without having to dedicate a file to the paste.
+
+Example code:
+```javascript
+var blank = new Space();
+blank.fillchar('');
 ```
 [To top](#documentation)
