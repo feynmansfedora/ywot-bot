@@ -201,6 +201,11 @@ class World extends EventEmitter{
       callbacks.push(call); //Adds the callback
       dimensions.push(coords); //Makes parsing easier later
     }
+    this.conwrite = function(newtile, oldtile, y, x){
+      let oldspace = new Space();
+      oldspace.fromtile(oldtile);
+      this.write(newtile.sub(oldspace).towrite(y,x));
+    }
   }
 }
 

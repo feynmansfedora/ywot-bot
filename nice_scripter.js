@@ -53,23 +53,23 @@ function gettime(user, tiley, tilex, tile){
   newspace.data = [space, date, time, space, space, space, space, space];
   curspace.fromtile(tile);
   newspace.sub(curspace);
-  main.write(newspace.towrite(tiley,tilex));
+  main.cwrite(newspace, tile, tiley, tilex);
 }
 function passcheck(user, tiley, tilex, tile){ //checks if correct passcode is entered
   console.log('passcheck called at',tiley,tilex);
   console.log('curpass', curpass);
   console.log('attempted pass', tile.substring(32,48));
   if (tile.substring(32, 48) == curpass){
-    main.write(hashspace.towrite(tiley, tilex));
+    main.cwrite(hashspace, tile, tiley, tilex);
     elevateduser = user; //what priveleges does an elevated user have?
     console.log('user elevated');
     unrsrv([tiley,tilex]); //Unreserves if password typed in
   } else {
-    main.write(passnotice.towrite(tiley, tilex));
+    main.cwrite(passnotice, tile, tiley, tilex);
   }
 }
 function inputhold(user, tiley, tilex, tile){
-  main.write(empty.towrite(tiley,tilex));
+  main.cwrite(empty,tile,tiley,tilex);
   console.log('inputhold')
   if (tile.substring(127,128) == '&'){
     unrsrv([tiley,tilex]);
@@ -77,36 +77,32 @@ function inputhold(user, tiley, tilex, tile){
     main.fetch([tiley, tilex-1, tiley, tilex-1],(space)=>{
       unrsrv([tiley,tilex]);
       rsrv((user0,tiley0,tilex0,tile0)=>{
-        hold(space,tiley,tilex);
+        hold(space,tile0,tiley,tilex);
       },[tiley,tilex]);
-      hold(space,tiley,tilex);
+      hold(space,tile0,tiley,tilex);
     });
   }
 }
-function hold(space, tiley, tilex){
+function hold(space, tile, tiley, tilex){
   console.log('athold');
-  main.write(space.towrite(tiley,tilex));
+  main.cwrite(space, tile, tiley, tilex);
 }
 function buffer(user, tiley, tilex, tile){
   load = new ywot.Space();
   load.fillchar(' ')
   load[1] = '   ..........   '.split('');
-  main.write(load.towrite(tiley,tilex));
+  main.cwrite(load, tile, tiley, tilex);
 }
 
 //Callbacks for if these strings are ever seen in an omega tile
 var cmdkeys = {"back":(user, tiley,tilex,tile)=>{
   let tilereplace = new ywot.Space();
-  let curtile = new ywot.Space();
-  curtile.fromtile(tile);
   tilereplace.fromtile(old[[tiley,tilex]].replace('Ω',' '));
-  main.write(tilereplace.sub(curtile).towrite(tiley,tilex));
+  main.cwrite(tilereplace, tile, tiley, tilex);
 },"bsck":(user,tiley,tilex,tile)=>{
   let tilereplace = new ywot.Space();
-  let curtile = new ywot.Space();
-  curtile.fromtile(tile);
   tilereplace.fromtile(old[[tiley,tilex]]);
-  main.write(tilereplace.sub(curtile).towrite(tiley,tilex));
+  main.cwrite(tilereplace, tile, tiley,tilex);
 },"time":(user,tiley,tilex,tile)=>{
   rsrv(gettime, [tiley,tilex]);
   gettime(tiley,tilex,tile);
@@ -153,10 +149,8 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   let valid = tilekeys.filter(tile => (tile[0] >= -2 && tile[0] <= 1 && tile[1] >= -2 && tile[1] <= 1)); //Main protected area
   if (true){ //just for readability/collapsing; handles alert edits
     for (i=0; i<valid.length; i++){
-      curtile = new ywot.Space();
-      curtile.fromtile(tiles[valid[i]].content);
-      tilespace = alert.gettile(valid[i][0]+2,valid[i][1]+2).sub(curtile);
-      main.write(tilespace.towrite(valid[i][0],valid[i][1]));
+      tilespace = alert.gettile(valid[i][0]+2,valid[i][1]+2);
+      main.cwrite(tilespace, tiles[valid[i]].content, valid[i][0],valid[i][1]);
     }
   }
   let rsrvdo = tilekeys.filter(tile => rsrvtiles.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile)) && rsrvcmds[tile]); //Checks if in rsrv
@@ -169,11 +163,9 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   let omegapos = tilekeys.filter(tile => tiles[tile].content.includes('Ω'));
   if (rsrvdo.length == 0 && valid.length == 0){ //handles omega calls
     for (i=0; i<omegapos.length; i++){
-      curtile = new ywot.Space();
-      curtile.fromtile(tiles[omegapos[i]].content);
       old[omegapos[i]] = tiles[omegapos[i]].content;
       curcmds.push(omegapos[i]);
-      main.write(cmdbox.sub(curtile).towrite(parseInt(omegapos[i][0]),parseInt(omegapos[i][1])));
+      main.cwrite(cmdbox, tiles[omegapos[i]].content, parseInt(omegapos[i][0]), parseInt(omegapos[i][1]));
     }
   }
   let docmds = tilekeys.filter(tile => curcmds.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile))); //List of edited tiles which have been recently omega'd
