@@ -352,7 +352,7 @@ function Space(){
     }
     return write
   }
-  this.sub = function(otherspace, y1=0, x1=0, y2=0, x2=0){
+  this.sub = function(otherspace, y1=0, x1=0, y2=0, x2=0){ //Wrapper for comb to subtract otherspace from this
     return this.comb(otherspace,(char1,char2)=>{
       if (char1 == char2){
         return '';
@@ -362,6 +362,15 @@ function Space(){
         return char1
       }
     }, x1, y1, x2, y2)
+  }
+  this.add = function(otherspace, y1=0, x1=0, y2=0, x2=0){ //Wrapper for comb to add this on otherspace on top of this
+    return this.comb(otherspace,(char1,char2)=>{
+      if (char2 == ''){
+        return char1;
+      } else {
+        return char2;
+      }
+    })
   }
   this.fillchar = function(char, y=1, x=1){ //Fills space x,y with char
     let row = Array(x*16).fill(char);
