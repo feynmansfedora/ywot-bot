@@ -111,13 +111,13 @@ class World extends EventEmitter{
         callback(spaceout);
       }
       if (message.kind === 'channel'){ //Change to switch-case
-        this.emit('channel', message.sender);
+        self.emit('channel', message.sender);
       }
       if (message.kind === 'cursor'){
-        this.emit('cursor', message.positions, message.sender);
+        self.emit('cursor', message.positions, message.sender);
       }
       if (message.kind === 'tileUpdate'){
-        this.emit('tileUpdate', message.sender, message.source, message.tiles, Object.keys(message.tiles).map(coord => coord.split(',').map(num => parseInt(num))));
+        self.emit('tileUpdate', message.sender, message.source, message.tiles, Object.keys(message.tiles).map(coord => coord.split(',').map(num => parseInt(num))));
       }
     }
     this.getwritequeue = function(){ //External getter to make writequeue private
