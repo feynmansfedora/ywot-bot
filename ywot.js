@@ -9,10 +9,10 @@ class YWOT extends EventEmitter{ //Manages connection frequency with the server
     super();
     this.openworld = function(name){ //Handles websocket creation and houses new world function.
       if ( name === ''){ //Basic internal formatting (for YWOT)
-        var sock = new ws('ws://www.yourworldoftext.com/ws/');
+        var sock = new ws('wss://www.yourworldoftext.com/ws/');
       }
       else {
-        var sock = new ws(`ws://www.yourworldoftext.com/${name}/ws/`);
+        var sock = new ws(`wss://www.yourworldoftext.com/${name}/ws/`);
       }
       var world = new World(name, this); //Hands world proper object to call for functions like newpush
       sock.on('open', () => { //Asynch to finish handling websockets and trigger processes (for websocket error prevention -- like attempted use)
