@@ -146,37 +146,35 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   if (sender == thissender){ //Prevents infinite recursion on its own edits
     return 0;
   }
+
   let valid = tilekeys.filter(tile => (tile[0] >= -2 && tile[0] <= 1 && tile[1] >= -2 && tile[1] <= 1)); //Main protected area
-  if (true){ //just for readability/collapsing; handles alert edits
-    for (i=0; i<valid.length; i++){
-      tilespace = alert.gettile(valid[i][0]+2,valid[i][1]+2);
-      main.cwrite(tilespace, tiles[valid[i]].content, valid[i][0],valid[i][1]);
-    }
+  for (i=0; i<valid.length; i++){
+    tilespace = alert.gettile(valid[i][0]+2,valid[i][1]+2);
+    main.cwrite(tilespace, tiles[valid[i]].content, valid[i][0],valid[i][1]);
   }
+  if (valid.length != 0) return 0;
+
   let rsrvdo = tilekeys.filter(tile => rsrvtiles.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile)) && rsrvcmds[tile]); //Checks if in rsrv
-  if (valid.length == 0){ //reserved tiles handling
-    for (i=0; i<rsrvdo.length; i++){
-      let cmd = rsrvdo[i];
-      rsrvcmds[cmd](sender,cmd[0],cmd[1],tiles[cmd].content);
-    }
+  for (i=0; i<rsrvdo.length; i++){
+    let cmd = rsrvdo[i];
+    rsrvcmds[cmd](sender,cmd[0],cmd[1],tiles[cmd].content);
+  if (rsrvdo.length != 0) return 0;
+
+  let omegapos = tilekeys.filter(tile => tiles[tile].content.includes('Ω')); //handles omega calls
+  for (i=0; i<omegapos.length; i++){
+    old[omegapos[i]] = tiles[omegapos[i]].content;
+    curcmds.push(omegapos[i]);
+    main.cwrite(cmdbox, tiles[omegapos[i]].content, parseInt(omegapos[i][0]), parseInt(omegapos[i][1]));
   }
-  let omegapos = tilekeys.filter(tile => tiles[tile].content.includes('Ω'));
-  if (rsrvdo.length == 0 && valid.length == 0){ //handles omega calls
-    for (i=0; i<omegapos.length; i++){
-      old[omegapos[i]] = tiles[omegapos[i]].content;
-      curcmds.push(omegapos[i]);
-      main.cwrite(cmdbox, tiles[omegapos[i]].content, parseInt(omegapos[i][0]), parseInt(omegapos[i][1]));
-    }
-  }
-  let docmds = tilekeys.filter(tile => curcmds.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile))); //List of edited tiles which have been recently omega'd
-  if (omegapos.length == 0 && rsrvdo.length == 0 && valid.length == 0){ //handles calls in omega boxes
-    for (i=0; i<docmds.length; i++){
-      let cmd = docmds[i]; //A given edited tile which has been omega'd
-      console.log(cmd);
-      for (j=0; j<Object.keys(cmdkeys).length; j++){ //Iterates through callback functions and each command caller name
-        if (tiles[cmd].content.includes(Object.keys(cmdkeys)[j])){ //If the given edited tile has the cmd caller name
-          Object.values(cmdkeys)[j](sender,cmd[0],cmd[1],tiles[cmd].content); //Calls callback; gives coordinates
-        }
+  if (omegapos.length != 0) return 0;
+
+  let docmds = tilekeys.filter(tile => curcmds.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile))); //List of edits in omega boxes
+  for (i=0; i<docmds.length; i++){
+    let cmd = docmds[i]; //A given edited tile which has been omega'd
+    console.log(cmd);
+    for (j=0; j<Object.keys(cmdkeys).length; j++){ //Iterates through callback functions and each command caller name
+      if (tiles[cmd].content.includes(Object.keys(cmdkeys)[j])){ //If the given edited tile has the cmd caller name
+        Object.values(cmdkeys)[j](sender,cmd[0],cmd[1],tiles[cmd].content); //Calls callback; gives coordinates
       }
     }
   }
