@@ -38,7 +38,7 @@ class YWOT extends EventEmitter{ //Manages connection frequency with the server
       else{
         this.emit('free'); //Background processes like filling in an area
       }
-    }, 4000)
+    }, 750)
   }
 }
 
