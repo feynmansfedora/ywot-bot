@@ -11,6 +11,10 @@ Make sure you're in the right directory, then run the following commands:
 git clone https://github.com/feynmansfedora/ywot-bot.git
 sudo npm i -g ws
 ```
+To run any of the programs (`nice_scripter.js` for example), run the following command:
+```
+node nice_scripter.js
+```
 # Documentation
 If you're looking for a quick introduction to how the API is structured, check out js-lib/helloworld.js that prints helloworld on [testworld](https://www.yourworldoftext.com/testworld). Otherwise, the full documentation is here.
 It's written in node.js, and consists of three classes, lying heavily on the built-in [Event Emitter](https://nodejs.org/api/events.html):
