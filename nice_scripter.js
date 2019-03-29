@@ -16,11 +16,21 @@ var cmdbox = new ywot.Space();
 cmdbox.readfile('./cmdbox.txt');
 
 //Trivial promises
+var coords = {"tileY":58301,"tileX":-20184,"charY":2,"charX":4}
 main.on('on',()=>{
-  main.write(alert.towrite(-2,-2));
+  main.cursor(coords);
 });
+
+//Self-identification
 var thissender;
-main.on('channel',(sender)=>{thissender = sender;});
+main.on('cursor',(positions,sender)=>{
+  let pos = positions[0];
+  if (pos.tileY == coords.tileY && pos.tileX == coords.tileX && pos.charY == coords.charY && pos.charX == coords.charX){
+    thissender = sender;
+    main.on('cursor',(positions,sender)=>{return 0;});
+    main.write(alert.towrite(-2,-2)); //also limit responder
+  }
+});
 
 //"User-defined" tools:
 
@@ -70,7 +80,7 @@ function passcheck(user, tiley, tilex, tile){ //checks if correct passcode is en
 }
 function inputhold(user, tiley, tilex, tile){
   main.cwrite(empty,tile,tiley,tilex);
-  console.log('inputhold')
+  console.log('inputhold');
   if (tile.substring(127,128) == '&'){
     unrsrv([tiley,tilex]);
     rsrv(buffer,[tiley,tilex]);
@@ -146,7 +156,7 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   if (sender == thissender){ //Prevents infinite recursion on its own edits
     return 0;
   }
-
+  console.log(sender, thissender);
   let valid = tilekeys.filter(tile => (tile[0] >= -2 && tile[0] <= 1 && tile[1] >= -2 && tile[1] <= 1)); //Main protected area
   for (i=0; i<valid.length; i++){
     tilespace = alert.gettile(valid[i][0]+2,valid[i][1]+2);
@@ -158,6 +168,7 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   for (i=0; i<rsrvdo.length; i++){
     let cmd = rsrvdo[i];
     rsrvcmds[cmd](sender,cmd[0],cmd[1],tiles[cmd].content);
+  }
   if (rsrvdo.length != 0) return 0;
 
   let omegapos = tilekeys.filter(tile => tiles[tile].content.includes('Ω')); //handles omega calls

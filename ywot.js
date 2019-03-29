@@ -38,7 +38,7 @@ class YWOT extends EventEmitter{ //Manages connection frequency with the server
       else{
         this.emit('free'); //Background processes like filling in an area
       }
-    }, 750)
+    }, 4000)
   }
 }
 
@@ -200,6 +200,10 @@ class World extends EventEmitter{
       newqueue(`{"fetchRectangles":${JSON.stringify(coords)},"kind":"fetch","v":"3"}`, this); //Queues cmd
       callbacks.push(call); //Adds the callback
       dimensions.push(coords); //Makes parsing easier later
+    }
+    this.cursor = function(coords){
+      let request = `{"kind":"cursor","positions":[${JSON.stringify(coords)}]}`;
+      newqueue(request, this);
     }
     this.cwrite = function(newtile, oldtile, y, x){ //conservative write; shortens design pattern for efficient writing (newtile = Space to add; oldtile = tile string originally there; y, x = location)
       let oldspace = new Space();
