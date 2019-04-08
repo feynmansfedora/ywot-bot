@@ -155,6 +155,8 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
     return 0;
   }
   console.log(sender, thissender);
+
+  //Protects alert message from vandalism
   let valid = tilekeys.filter(tile => (tile[0] >= -2 && tile[0] <= 1 && tile[1] >= -2 && tile[1] <= 1)); //Main protected area
   for (i=0; i<valid.length; i++){
     tilespace = alert.gettile(valid[i][0]+2,valid[i][1]+2);
@@ -162,14 +164,16 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   }
   if (valid.length != 0) return 0;
 
-  let rsrvdo = tilekeys.filter(tile => rsrvtiles.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile)) && rsrvcmds[tile]); //Checks if in rsrv
+  //Checks if a "reserved" square for a previous command and updates it with that command's callback
+  let rsrvdo = tilekeys.filter(tile => rsrvtiles.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile)) && rsrvcmds[tile]);
   for (i=0; i<rsrvdo.length; i++){
     let cmd = rsrvdo[i];
     rsrvcmds[cmd](sender,cmd[0],cmd[1],tiles[cmd].content);
   }
   if (rsrvdo.length != 0) return 0;
 
-  let omegapos = tilekeys.filter(tile => tiles[tile].content.includes('Ω')); //handles omega calls
+  //Creates omega box image and records the location of the box
+  let omegapos = tilekeys.filter(tile => tiles[tile].content.includes('Ω'));
   for (i=0; i<omegapos.length; i++){
     old[omegapos[i]] = tiles[omegapos[i]].content;
     curcmds.push(omegapos[i]);
@@ -177,7 +181,8 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   }
   if (omegapos.length != 0) return 0;
 
-  let docmds = tilekeys.filter(tile => curcmds.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile))); //List of edits in omega boxes
+  //Manages all edits in omega boxes and calls command if written by user
+  let docmds = tilekeys.filter(tile => curcmds.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile)));
   for (i=0; i<docmds.length; i++){
     let cmd = docmds[i]; //A given edited tile which has been omega'd
     console.log(cmd);
@@ -187,4 +192,5 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
       }
     }
   }
+  if (docmds.length != 0) return 0;
 });
