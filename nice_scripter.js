@@ -115,10 +115,8 @@ var cmdkeys = {"back":(user, tiley,tilex,tile)=>{
   main.cwrite(tilereplace, tile, tiley,tilex);
 },"time":(user,tiley,tilex,tile)=>{
   rsrv(gettime, [tiley,tilex]);
-  gettime(tiley,tilex,tile);
-  setTimeout(()=>{unrsrv([tiley,tilex]);},600*1000);
   gettime(user,tiley,tilex,tile);
-  setTimeout(()=>{unrsrv([tiley,tilex]);},30*1000);
+  setTimeout(()=>{unrsrv([tiley,tilex]);},600*1000);
 },"elevate":(user,tiley,tilex,tile)=>{
   curpass = '';
   var posschar = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
