@@ -9,7 +9,7 @@ For installation on virtually any Unix system:
 Make sure you're in the right directory, then run the following commands:
 ```
 git clone https://github.com/feynmansfedora/ywot-bot.git
-sudo npm i -g ws
+npm install
 ```
 To run any of the programs (`nice_scripter.js` for example), run the following command:
 ```

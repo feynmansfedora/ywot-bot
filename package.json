@@ -15,7 +15,7 @@
   "bugs": {
     "url": "https://github.com/feynmansfedora/ywot-bot/issues"
   },
-  "homepage": "https://github.com/feynmansfedora/ywot-bot#readme"
+  "homepage": "https://github.com/feynmansfedora/ywot-bot#readme",
   "dependencies": {
     "ws": "6.2.1"
   }
