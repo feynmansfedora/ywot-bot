@@ -167,7 +167,7 @@ class World extends EventEmitter{
       for (var i=0; i<chars.length; i++){
         writequeue.push(chars[i]);
       }
-      for (var i=0; i<Math.floor(writequeue.length/200-oldlength/200)+1; i++){
+      for (var i=0; i<Math.ceil(writequeue.length/200)-Math.floor(oldlength/200); i++){
         newqueue('USE WRITEQUEUE', this);
       }
     }
