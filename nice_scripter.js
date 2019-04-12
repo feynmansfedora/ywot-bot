@@ -52,15 +52,17 @@ let empty = new ywot.Space();
 empty.fillchar(' ');
 
 //Functions and callbacks from cmdkeys
+let timestate = {};
 function gettime(user, tiley, tilex, tile){
   console.log('gettime called');
   let today = new Date();
-  let date = ('  ' + today.toISOString().substring(0,10)).padEnd(16, ' ').split('');
-  let time = ('  ' + today.toISOString().slice(11,19) + 'Z').padEnd(16, ' ').split('');
+  let date = ('  ' + today.toISOString().substring(0,10)).padEnd(14, ' ').split('');
+  let time = ('  ' + today.toISOString().slice(11,19) + 'Z').padEnd(14, ' ').split('');
+  let remain = ('  secs: ' + Math.floor(600-(Date.now()-timestate[[tiley, tilex]])/1000).toString().padStart(4, '0') + '    ').split('');
   let space = Array(16).fill(' ');
   let newspace = new ywot.Space();
   let curspace = new ywot.Space();
-  newspace.data = [space, date, time, space, space, space, space, space];
+  newspace.data = [space, date, time, space, space, space, remain, space];
   curspace.fromtile(tile);
   newspace.sub(curspace);
   main.cwrite(newspace, tile, tiley, tilex);
@@ -114,6 +116,7 @@ var cmdkeys = {"back":(user, tiley,tilex,tile)=>{
   tilereplace.fromtile(old[[tiley,tilex]]);
   main.cwrite(tilereplace, tile, tiley,tilex);
 },"time":(user,tiley,tilex,tile)=>{
+  timestate[[tiley,tilex]] = Date.now();
   rsrv(gettime, [tiley,tilex]);
   gettime(user,tiley,tilex,tile);
   setTimeout(()=>{unrsrv([tiley,tilex]);},600*1000);
