@@ -3,17 +3,17 @@
 //Responds to Ω with an empty box.
 
 //Libraries:
-const ywot = require('./ywot.js');
+const ywot = require('../main/ywot.js');
 const fs = require('fs');
 
 //Client, worlds, and text alerts/files
 var client = new ywot.YWOT();
 var main = client.openworld('');
 var alert = new ywot.Space();
-var passkey = client.openworld(fs.readFileSync('.key.txt', 'utf8').split('\n')[0]); //World which contains passkey; put the world where it puts the key in the first line of .key.txt
-alert.readfile('./alert.txt');
+var passkey = client.openworld(fs.readFileSync(__dirname + '/.key.txt', 'utf8').split('\n')[0]); //World which contains passkey; put the world where it puts the key in the first line of .key.txt
+alert.readfile(__dirname + '/alert.txt');
 var cmdbox = new ywot.Space();
-cmdbox.readfile('./cmdbox.txt');
+cmdbox.readfile(__dirname + '/cmdbox.txt');
 
 //Trivial promises
 var coords = {"tileY":58301,"tileX":-20184,"charY":2,"charX":4}
