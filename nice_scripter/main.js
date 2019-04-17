@@ -120,10 +120,24 @@ var cmdkeys = {"back":(data, sender, tile)=>{
   if (sender != elevateduser && data.elevated){
     main.cwrite(data.store, tile, data.pos[0], data.pos[1]);
   }
-}};
+},"missile":(data,sender,tile)=>{ //Sends the left block (whatever is in it) non-destructively to the right for 1000 blocks
+  let newspace = new ywot.Space();
+  newspace.frominstruct('Welcome to mission control. Put anything to the left and type go when ready');
+  main.cwrite(newspace, tile, data.pos[0], data.pos[1]);
+  main.fetch([data.pos[0],data.pos[1]-1,data.pos[0],data.pos[1]+999], (space)=>{
+    data.missile = space.gettile(0, 0);
+    data.cur = space.getrange(0, 1, 0, 1000);
+  })
+  if (tile.includes('go')){
+    newbg((newdata)=>{
+      if (new){
 
-//Background commands:
-bgcmds = []; //Queue of bgcmds
+      } else {
+
+      }
+    }, data.pos, {"new":true,""}) //hmm how can the data stay up to date??
+  }
+}};
 
 //Reservations by omega commands:
 var rsrvcmds = {}; //Callbacks to be run if a tile claimed by an omega command is edited
@@ -180,7 +194,6 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
     console.log(cmd);
     for (j=0; j<Object.keys(cmdkeys).length; j++){ //Iterates through callback functions and each command caller name
       if (tiles[cmd].content.includes(Object.keys(cmdkeys)[j])){ //If the given edited tile has the cmd caller name
-        console.log(rsrvtiles);
         rsrv({"data":{"called":0,"tiley":cmd[0],"tilex":cmd[1],"pos":cmd},"call":Object.values(cmdkeys)[j]},cmd);
         callrsrv(cmd, sender, tiles[cmd].content); //Calls callback; gives coordinates
       }
@@ -198,4 +211,19 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   if (omegapos.length != 0) return 0;
 });
 
-client.on('free',()=>{});
+//Background commands:
+bgcmds = []; //Queue of bgcmds structured as {"data","call"}
+function newbg(call, pos, init, priority=false){
+  init.pos = pos;
+  init.time = Date.now();
+  if (priority){
+    bgcmds.unshift({"data":init,"call":call});
+  } else {
+    bgcmds.push({"data":init,"call":call});
+  }
+}
+
+client.on('free',()=>{
+  let cmd = bgcmds.shift()
+  cmd.call(cmd.data)
+});

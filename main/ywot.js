@@ -27,7 +27,7 @@ class YWOT extends EventEmitter{ //Manages connection frequency with the server
       if (this.imcall){
         world.servpush();
         this.imcall = false;
-        setTimeout(this.push, 750);
+        setTimeout(this.push, 800);
       } else {
         pushqueue.push(world);
       }
@@ -42,7 +42,7 @@ class YWOT extends EventEmitter{ //Manages connection frequency with the server
         //servpush is in target object (World), so multiple worlds can be handled
         //Prevents 403 error
         console.log('server communications remaining:', pushqueue.length, '; time:', +new Date()); //mainlog
-        setTimeout(self.push, 750);
+        setTimeout(self.push, 800);
         self.imcall = false;
       }
       else{
@@ -50,7 +50,7 @@ class YWOT extends EventEmitter{ //Manages connection frequency with the server
         self.imcall = true;
       }
     }
-    setTimeout(this.push, 750);
+    setTimeout(this.push, 800);
   }
 }
 
@@ -394,6 +394,14 @@ function Space(){
     for (let i=0; i<y*8; i++){
       this.data.push(row.slice());
     }
+  }
+  this.frominstruct = function(instruct){
+    //Must be 72 chars or less
+    instruct.padEnd(72, ' ');
+    blank = Array(16).fill(' ');
+    this.data.push(blank);
+    instruct.match(/.{1,12}/g).forEach((str)=>{this.data.push('  '+str+'  ');});
+    this.data.push(blank);
   }
 }
 exports.Space = Space
