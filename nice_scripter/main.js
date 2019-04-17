@@ -122,10 +122,17 @@ var cmdkeys = {"back":(data, sender, tile)=>{
   }
 }};
 
+//Background commands:
+bgcmds = []; //Queue of bgcmds
+
 //Reservations by omega commands:
 var rsrvcmds = {}; //Callbacks to be run if a tile claimed by an omega command is edited
 var rsrvtiles = []; //Those tiles which omega commands claim
 function rsrv(cmd,tile){
+  if (rsrvtiles.indexOf(tile) != -1){
+    console.trace();
+    throw "Unreserve before reservation"
+  }
   rsrvtiles.push(tile);
   rsrvcmds[tile] = cmd;
 }
@@ -173,6 +180,7 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
     console.log(cmd);
     for (j=0; j<Object.keys(cmdkeys).length; j++){ //Iterates through callback functions and each command caller name
       if (tiles[cmd].content.includes(Object.keys(cmdkeys)[j])){ //If the given edited tile has the cmd caller name
+        console.log(rsrvtiles);
         rsrv({"data":{"called":0,"tiley":cmd[0],"tilex":cmd[1],"pos":cmd},"call":Object.values(cmdkeys)[j]},cmd);
         callrsrv(cmd, sender, tiles[cmd].content); //Calls callback; gives coordinates
       }
@@ -189,3 +197,5 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   }
   if (omegapos.length != 0) return 0;
 });
+
+client.on('free',()=>{});
