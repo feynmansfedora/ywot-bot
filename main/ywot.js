@@ -7,6 +7,8 @@ const EventEmitter = require('events');
 class YWOT extends EventEmitter{ //Manages connection frequency with the server
   constructor() {
     super();
+    let self = this;
+    this.imcall = false;
     this.openworld = function(name){ //Handles websocket creation and houses new world function.
       if ( name === ''){ //Basic internal formatting (for YWOT)
         var sock = new ws('wss://www.yourworldoftext.com/ws/');
@@ -22,23 +24,33 @@ class YWOT extends EventEmitter{ //Manages connection frequency with the server
     }
     var pushqueue = [];
     this.newpush = function(world){ //Used primarily by World to callback at a good frequency
-      pushqueue.push(world);
+      if (this.imcall){
+        world.servpush();
+        this.imcall = false;
+        setTimeout(this.push, 750);
+      } else {
+        pushqueue.push(world);
+      }
     }
     this.emptyqueue = function(world){ //External function; empties queue for a given world.
       pushqueue = pushqueue.filter(item => {return item != world;});
       console.log('queue emptied');
     }
-    setInterval(()=>{ //Primary function: gives server commands
+    this.push = function(){ //Primary function; pushes message to the ywot servers
       if (pushqueue.length > 0){
         pushqueue.shift().servpush(); //Treats pushqueue list like a queue, and runs servpush (hands cmd to server)
         //servpush is in target object (World), so multiple worlds can be handled
         //Prevents 403 error
         console.log('server communications remaining:', pushqueue.length, '; time:', +new Date()); //mainlog
+        setTimeout(self.push, 750);
+        self.imcall = false;
       }
       else{
-        this.emit('free'); //Background processes like filling in an area
+        self.emit('free'); //Background processes like filling in an area
+        self.imcall = true;
       }
-    }, 750)
+    }
+    setTimeout(this.push, 750);
   }
 }
 
@@ -66,11 +78,11 @@ class World extends EventEmitter{
       sockclosed = true;
       console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
       setTimeout(function() {
-        if ( name === ''){
-          var asock = new ws('ws://www.yourworldoftext.com/ws/');
+        if (name === ''){
+          var asock = new ws('wss://www.yourworldoftext.com/ws/');
         }
         else {
-          var asock = new ws(`ws://www.yourworldoftext.com/${name}/ws/`);
+          var asock = new ws(`wss://www.yourworldoftext.com/${name}/ws/`);
         }
         asock.on('open', () => {
           sockclosed = false;
