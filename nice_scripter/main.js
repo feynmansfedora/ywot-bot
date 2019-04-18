@@ -122,20 +122,23 @@ var cmdkeys = {"back":(data, sender, tile)=>{
   }
 },"missile":(data,sender,tile)=>{ //Sends the left block (whatever is in it) non-destructively to the right for 1000 blocks
   let newspace = new ywot.Space();
+  data.fin = false;
   newspace.frominstruct('Welcome to mission control. Put anything to the left and type go when ready');
   main.cwrite(newspace, tile, data.pos[0], data.pos[1]);
   main.fetch([data.pos[0],data.pos[1]-1,data.pos[0],data.pos[1]+999], (space)=>{
     data.missile = space.gettile(0, 0);
     data.cur = space.getrange(0, 1, 0, 1000);
+    data.fin = true;
   })
-  if (tile.includes('go')){
+  if (tile.includes('go') && data.fin){
     newbg((newdata)=>{
-      if (new){
+      if (newdata.new){
+        newdata.new = false;
 
       } else {
 
       }
-    }, data.pos, {"new":true,""}) //hmm how can the data stay up to date??
+    }, data.pos, {"new":true,"curtile":{}}) //hmm how can the data stay up to date??
   }
 }};
 
@@ -144,21 +147,29 @@ var rsrvcmds = {}; //Callbacks to be run if a tile claimed by an omega command i
 var rsrvtiles = []; //Those tiles which omega commands claim
 function rsrv(cmd,tile){
   if (rsrvtiles.indexOf(tile) != -1){
-    console.trace();
-    throw "Unreserve before reservation"
+    rsrvcmds[tile].push(cmd);
   }
+  console.log('cmd', cmd);
   rsrvtiles.push(tile);
-  rsrvcmds[tile] = cmd;
+  rsrvcmds[tile] = [cmd];
 }
-function unrsrv(tile){ //Currently runs on a crazy slow indexOf system, but sorting optimizations should/could be added if necessary
-  rsrvtiles.splice(rsrvtiles.indexOf(tile),1);
-  rsrvcmds[tile] = false;
-}
-function callrsrv(tile, send, content){
-  rsrvcmds[tile].call(rsrvcmds[tile].data, send, content);
-  if (rsrvcmds[tile]){
-    rsrvcmds[tile].data.called += 1;
+function unrsrv(tile, func){ //Removes func as a call from tile
+  ind = rsrvtiles.indexOf(tile);
+  if (rsrvtiles[ind] && rsrvtiles[ind].length > 1){
+    rsrvtiles[ind].splice(rsrvtiles[ind].indexOf(func));
+  } else {
+    rsrvtiles.splice(ind,1);
+    rsrvcmds[tile] = false;
   }
+}
+function callrsrv(tile, send, content){ //Calls all funcs associated with a tile
+  let cmds = rsrvcmds[tile]; //List of all cmds for the specific tile
+  for (i=0; i<rsrvcmds[tile].length; i++){
+    cmd = cmds[i]; //Whichever cmd is selected
+    cmd.call(cmd.data, send, content);
+    cmd.data.called += 1;
+  }
+
 }
 var curcmds = []; //Current blocks to run commands in (after omega assignment)
 
@@ -187,26 +198,25 @@ main.on('tileUpdate',(sender,source,tiles,tilekeys)=>{
   }
   if (rsrvdo.length != 0) return 0;
 
-  //Manages all edits in omega boxes and calls command if written by user
-  let docmds = tilekeys.filter(tile => curcmds.map(tile1 => JSON.stringify(tile1)).includes(JSON.stringify(tile)));
-  for (i=0; i<docmds.length; i++){
-    let cmd = docmds[i]; //A given edited tile which has been omega'd
-    console.log(cmd);
-    for (j=0; j<Object.keys(cmdkeys).length; j++){ //Iterates through callback functions and each command caller name
-      if (tiles[cmd].content.includes(Object.keys(cmdkeys)[j])){ //If the given edited tile has the cmd caller name
-        rsrv({"data":{"called":0,"tiley":cmd[0],"tilex":cmd[1],"pos":cmd},"call":Object.values(cmdkeys)[j]},cmd);
-        callrsrv(cmd, sender, tiles[cmd].content); //Calls callback; gives coordinates
-      }
-    }
-  }
-  if (docmds.length != 0) return 0;
-
   //Creates omega box image and records the location of the box
   let omegapos = tilekeys.filter(tile => tiles[tile].content.includes('Ω'));
   for (i=0; i<omegapos.length; i++){
-    old[omegapos[i]] = tiles[omegapos[i]].content;
-    curcmds.push(omegapos[i]);
-    main.cwrite(cmdbox, tiles[omegapos[i]].content, parseInt(omegapos[i][0]), parseInt(omegapos[i][1]));
+    let coord = omegapos[i]; //abbreviation for the coordinate being examined
+    let data = tiles[coord]; //data about that tile handed from the server
+    let content = data.content //abbreviation for the chars in the tile
+    old[coord] = content;
+    rsrv({"data":{"called":0,"pos":coord[i]},"call":(data,sender,tile)=>{ //Replaces docmds as a command attributor; if the tile is edited, then the command is run.
+      let cmds = Object.keys(cmdkeys); //every callback function's name
+      for (j=0; j<cmds.length; j++){ //Iterates through callback functions and each command caller name
+        if (tile.includes(cmds[j])){ //If the given edited tile has the cmd caller name
+          unrsrv(data.pos);
+          rsrv({"data":{"called":0,"pos":data.pos},"call":Object.values(cmdkeys)[j]},omegapos[i]);
+          callrsrv(data.pos, sender, tile); //Calls callback; gives coordinates
+          }
+        }
+      }
+    },omegapos[i]);
+    main.cwrite(cmdbox, content, parseInt(coord[0]), parseInt(coord[1]));
   }
   if (omegapos.length != 0) return 0;
 });
@@ -224,6 +234,8 @@ function newbg(call, pos, init, priority=false){
 }
 
 client.on('free',()=>{
-  let cmd = bgcmds.shift()
-  cmd.call(cmd.data)
+  let cmd = bgcmds.shift();
+  if (cmd){
+    cmd.call(cmd.data);
+  }
 });
